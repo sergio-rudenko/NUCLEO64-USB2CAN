@@ -33,10 +33,61 @@ uint8_t hexascii_to_halfbyte(uint8_t chr) {
 	if ((chr >= '0') && (chr <= '9'))
 		return (chr - '0');
 	if ((chr >= 'a') && (chr <= 'f'))
-		return (chr - 'a');
+		return (chr - 'a' + 10);
 	if ((chr >= 'A') && (chr <= 'F'))
-		return (chr - 'A');
+		return (chr - 'A' + 10);
 	return (0xFF);
+}
+
+bool lawicel_can_set_bitrate(rBuffer_t *rx) {
+	uint32_t bitrate;
+
+	if (ring_buffer_peek(rx) == LAWICEL_BITRATE) {
+		ring_buffer_move_read_index(rx, 1); // skip
+	}
+
+	switch (hexascii_to_halfbyte(ring_buffer_read(rx))) {
+	case 0: // S0 Setup 10Kbit
+		bitrate = 10000U;
+		break;
+
+	case 1: // S1 Setup 20Kbit
+		bitrate = 20000U;
+		break;
+
+	case 2: // S2 Setup 50Kbit
+		bitrate = 50000U;
+		break;
+
+	case 3: // S3 Setup 100Kbit
+		bitrate = 100000U;
+		break;
+
+	case 4: // S4 Setup 125Kbit
+		bitrate = 125000U;
+		break;
+
+	case 5: // S5 Setup 250Kbit
+		bitrate = 250000U;
+		break;
+
+	case 6: // S6 Setup 500Kbit
+		bitrate = 500000U;
+		break;
+
+	case 7: // S7 Setup 800Kbit
+		bitrate = 800000U;
+		break;
+
+	case 8: // S8 Setup 1Mbit
+		bitrate = 1000000U;
+		break;
+
+	default:
+		return false;
+	}
+
+	return UART2CAN_CAN_SetBitRate(&hcan, bitrate);
 }
 
 bool lawicel_can_receive(rBuffer_t *tx, CanRxMessage_t *msg) {
@@ -82,9 +133,9 @@ bool lawicel_can_transmit(rBuffer_t *rx, CanTxMessage_t *msg) {
 	}
 
 	/* Standard Id */
-	if ((hexascii_to_halfbyte(ring_buffer_at(rx, 0) == 0xFF))
-			|| (hexascii_to_halfbyte(ring_buffer_at(rx, 1) == 0xFF))
-			|| (hexascii_to_halfbyte(ring_buffer_at(rx, 2) == 0xFF))) {
+	if ((hexascii_to_halfbyte(ring_buffer_at(rx, 0)) == 0xFF)
+			|| (hexascii_to_halfbyte(ring_buffer_at(rx, 1)) == 0xFF)
+			|| (hexascii_to_halfbyte(ring_buffer_at(rx, 2)) == 0xFF)) {
 
 		return false;
 	}
@@ -100,8 +151,8 @@ bool lawicel_can_transmit(rBuffer_t *rx, CanTxMessage_t *msg) {
 
 	/* Frame data */
 	for (int i = 0; i < msg->header.DLC; i++) {
-		if ((hexascii_to_halfbyte(ring_buffer_at(rx, 0) == 0xFF))
-				|| (hexascii_to_halfbyte(ring_buffer_at(rx, 1) == 0xFF))) {
+		if ((hexascii_to_halfbyte(ring_buffer_at(rx, 0)) == 0xFF)
+				|| (hexascii_to_halfbyte(ring_buffer_at(rx, 1)) == 0xFF)) {
 
 			return false;
 		}
@@ -178,7 +229,38 @@ void lawicel_proceed(rBuffer_t *rx, rBuffer_t *tx) {
 				}
 				break;
 
+			case LAWICEL_TIMESTAMP:
+				switch (hexascii_to_halfbyte(ring_buffer_at(rx, 1))) {
+				case LAWICEL_TIMESTAMP_OFF:
+					useTimeStamp = false;
+					reply_data[0] = LAWICEL_RESPONCE_OK;
+					reply_size = 1;
+					break;
+
+				case LAWICEL_TIMESTAMP_ON:
+					useTimeStamp = true;
+					reply_data[0] = LAWICEL_RESPONCE_OK;
+					reply_size = 1;
+					break;
+
+				default:
+					reply_data[0] = LAWICEL_RESPONCE_ERROR;
+					reply_size = 1;
+				}
+				break;
+
+			case LAWICEL_BITRATE:
+				if (lawicel_can_set_bitrate(rx)) {
+					reply_data[0] = LAWICEL_RESPONCE_OK;
+					reply_size = 1;
+				} else {
+					reply_data[0] = LAWICEL_RESPONCE_ERROR;
+					reply_size = 1;
+				}
+				break;
+
 			default:
+				//TODO: Z[0,1]
 				reply_data[0] = LAWICEL_RESPONCE_OK;
 				reply_size = 1;
 				break;

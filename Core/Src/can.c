@@ -26,10 +26,10 @@
 CanTxMessage_t canTxMsg;
 CanRxMessage_t canRxMsg;
 
-uint32_t canTxCounter;
-uint32_t canRxCounter;
-uint32_t canErrorsCounter;
-uint32_t canRestartCounter;
+volatile uint32_t canTxCounter;
+volatile uint32_t canRxCounter;
+volatile uint32_t canErrorsCounter;
+volatile uint32_t canRestartCounter;
 
 /* USER CODE END 0 */
 
@@ -112,11 +112,22 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle) {
 
 /* USER CODE BEGIN 1 */
 
+bool UART2CAN_CAN_SetBitRate(CAN_HandleTypeDef *handle, uint32_t bitrate) {
+	if (handle->State == HAL_CAN_STATE_LISTENING) {
+		return false; // ERROR: CAN Started
+	}
+
+	/* calculate prescaler for bitrate */
+	handle->Init.Prescaler = SystemCoreClock
+			/ (bitrate * 12 /* 1TQ + 5TQ + 6TQ*/);
+
+	return (HAL_CAN_Init(handle) == HAL_OK);
+}
+
 bool UART2CAN_CAN_Stop(CAN_HandleTypeDef *handle) {
 	if (handle->State == HAL_CAN_STATE_LISTENING) {
 		return (HAL_CAN_Stop(handle) == HAL_OK);
-	}
-	else {
+	} else {
 		return true;
 	}
 }
@@ -180,6 +191,23 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *handle) {
 	if (handle->ErrorCode & HAL_CAN_ERROR_TX_TERR2) {
 		HAL_CAN_AbortTxRequest(handle, CAN_TX_MAILBOX2);
 	}
+
+	if (handle->ErrorCode & (
+	HAL_CAN_ERROR_EPV |
+	HAL_CAN_ERROR_BOF |
+	HAL_CAN_ERROR_STF |
+	HAL_CAN_ERROR_FOR |
+	HAL_CAN_ERROR_ACK |
+	HAL_CAN_ERROR_CRC |
+	HAL_CAN_ERROR_BR |
+	HAL_CAN_ERROR_BD)) {
+
+		UART2CAN_CAN_Stop(handle);
+		UART2CAN_CAN_Start(handle);
+		canRestartCounter++;
+	}
+
+	HAL_CAN_ResetError(handle);
 }
 
 void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *handle) {
