@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : USART.h
+  * File Name          : RTC.h
   * Description        : This file provides code for the configuration
-  *                      of the USART instances.
+  *                      of the RTC instances.
   ******************************************************************************
   * @attention
   *
@@ -17,8 +17,8 @@
   ******************************************************************************
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __usart_H
-#define __usart_H
+#ifndef __rtc_H
+#define __rtc_H
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -28,38 +28,24 @@
 
 /* USER CODE BEGIN Includes */
 
-#include <stdbool.h>
-#include <rbuffer.h>
-
 /* USER CODE END Includes */
 
-extern UART_HandleTypeDef huart2;
+extern RTC_HandleTypeDef hrtc;
 
 /* USER CODE BEGIN Private defines */
 
-#define UART_RX_BUFFER_SIZE		1024
-#define UART_TX_BUFFER_SIZE		8192
-
 /* USER CODE END Private defines */
 
-void MX_USART2_UART_Init(void);
+void MX_RTC_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
-extern rBuffer_t *pUartRxBuf;
-extern rBuffer_t *pUartTxBuf;
-
-void UART2CAN_UART_Receive(UART_HandleTypeDef *handle, rBuffer_t *rb);
-void UART2CAN_UART_Transmit(UART_HandleTypeDef *handle, rBuffer_t *rb);
-
-bool UART2CAN_UART_Is_Tx_Busy(UART_HandleTypeDef *handle);
 
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
-#endif /*__ usart_H */
+#endif /*__ rtc_H */
 
 /**
   * @}
