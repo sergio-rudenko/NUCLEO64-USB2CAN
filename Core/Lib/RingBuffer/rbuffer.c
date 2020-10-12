@@ -8,7 +8,7 @@
 #ifndef RBUFFER_C
 #define RBUFFER_C
 
-#include "rbuffer.h"
+#include <rbuffer.h>
 
 #ifdef __cplusplus
 extern "C" {

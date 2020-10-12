@@ -8,7 +8,6 @@
 #ifndef INC_LAWICEL_H_
 #define INC_LAWICEL_H_
 
-#include "rbuffer.h"
 #include "usart.h"
 #include "can.h"
 

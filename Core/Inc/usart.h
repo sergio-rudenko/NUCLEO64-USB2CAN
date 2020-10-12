@@ -19,6 +19,7 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __usart_H
 #define __usart_H
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -29,7 +30,7 @@
 /* USER CODE BEGIN Includes */
 
 #include <stdbool.h>
-#include "rbuffer.h"
+#include <rbuffer.h>
 
 /* USER CODE END Includes */
 
