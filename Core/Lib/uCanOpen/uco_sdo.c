@@ -228,6 +228,11 @@ SDO_segmented_read_process(uCO_t *p, uint8_t *request)
 	}
 
 	/* Check remaining data */
+	if (savedDataOffset >= savedDataSize)
+	{
+		SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		return UCANOPEN_ERROR;
+	}
 	if (savedDataSize - savedDataOffset <= 7)
 	{
 		freeBytes = (7 - (savedDataSize - savedDataOffset));
@@ -326,6 +331,13 @@ SDO_segmented_write_process(uCO_t *p, uint8_t *request)
 	if (savedDataOffset == 0)
 	{
 		memset(data, 0x00, savedDataSize);
+	}
+
+	/* Check remaining data */
+	if (savedDataOffset + (7 - freeBytes) > savedDataSize)
+	{
+		SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		return UCANOPEN_ERROR;
 	}
 
 	/* Write data */
