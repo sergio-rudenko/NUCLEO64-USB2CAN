@@ -128,7 +128,25 @@ const uint8_t uCO_ODI_1001_00 = 0x00; // NOTE: use field in uCO structure
  * 					open specification. Manufacturers may use this entry for any purpose
  * 					desired.
  */
-uint32_t uCO_ODI_1002_00 = 0x00000000;
+uint32_t uCO_ODI_1002_00 = 0xDEADBEEF;
+
+/**-------------------------------------------------------------
+ * [CAN_and_CANOpen.pdf] D.3.9 Manufacturer Device Name (1008h)
+ * -------------------------------------------------------------
+ */
+const char uCO_ODI_1008_00[] = "BASTION";
+
+/**-------------------------------------------------------------------
+ * [CAN_and_CANOpen.pdf] D.3.10 Manufacturer Hardware Version (1009h)
+ * -------------------------------------------------------------------
+ */
+const char uCO_ODI_1009_00[] = "Prototype 1.0";
+
+/**-------------------------------------------------------------------
+ * [CAN_and_CANOpen.pdf] D.3.11 Manufacturer Software Version (100Ah)
+ * -------------------------------------------------------------------
+ */
+char uCO_ODI_100A_00[] = ""; // implemented in main.c
 
 /** -------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.3 Guard Time (100Ch)
@@ -212,12 +230,12 @@ const uint16_t uCO_ODI_1017_00 = 1000; // NOTE: use field in uCO structure
 const uint8_t uCO_ODI_1018_00 = 4; /* Number of Entries */
 const uCO_OD_Item_t uCO_ODI_1018[] =
 {
-	/* sub | type | address */
-	{ 0x00, UNSIGNED8, (void*) &uCO_ODI_1018_00 },
-	{ 0x01, UNSIGNED32, (void*) &uCO.UID[0] },
-	{ 0x02, UNSIGNED32, (void*) &uCO.UID[1] },
-	{ 0x03, UNSIGNED32, (void*) &uCO.UID[2] },
-	{ 0x04, UNSIGNED32, (void*) &uCO.UID[3] },
+	/* sub | type | access | address */
+	{ 0x00, UNSIGNED8, READ_ONLY, (void*) &uCO_ODI_1018_00, sizeof(uCO_ODI_1018_00) },
+	{ 0x01, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[0], sizeof(uCO.UID[0]) },
+	{ 0x02, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[1], sizeof(uCO.UID[1]) },
+	{ 0x03, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[2], sizeof(uCO.UID[2]) },
+	{ 0x04, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[3], sizeof(uCO.UID[3]) },
 };
 
 /**
@@ -225,15 +243,19 @@ const uCO_OD_Item_t uCO_ODI_1018[] =
  */
 const uCO_OD_Item_t uCO_OD[] =
 {
-	/* index | type | address */
-	{ 0x1000, UNSIGNED32, (void*) &uCO_ODI_1000_00 }, 			// mandatory
-	{ 0x1001, UNSIGNED8, (void*) &uCO.ErrorRegister.value },	// mandatory
-	{ 0x1002, UNSIGNED32, (void*) &uCO_ODI_1002_00 },			// optional
-	{ 0x100C, UNSIGNED16, (void*) &uCO_ODI_100C_00 },			// mandatory
-	{ 0x100D, UNSIGNED8, (void*) &uCO_ODI_100D_00 },			// mandatory
-	{ 0x1017, UNSIGNED16, (void*) &uCO.HeartbeatTime },			// mandatory
-	{ 0x1018, SUBARRAY, (void*) &uCO_ODI_1018 },				// mandatory
+	/* index | type | access | address */
+	{ 0x1000, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1000_00 }, 		// mandatory
+	{ 0x1001, UNSIGNED8, READ_ONLY, (void*) &uCO.ErrorRegister.value },	// mandatory
+	{ 0x1002, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1002_00 },		// optional
+	{ 0x1008, VISIBLE_STRING, READ_ONLY, (void*) &uCO_ODI_1008_00, sizeof(uCO_ODI_1008_00) },	// optional
+	{ 0x1009, VISIBLE_STRING, READ_ONLY, (void*) &uCO_ODI_1009_00, sizeof(uCO_ODI_1009_00) },	// optional
+	{ 0x100A, VISIBLE_STRING, READ_WRITE, (void*) &deviceSoftwareVersion, sizeof(deviceSoftwareVersion) },	// optional
+	{ 0x100C, UNSIGNED16, READ_WRITE, (void*) &uCO_ODI_100C_00 },		// mandatory
+	{ 0x100D, UNSIGNED8, READ_WRITE, (void*) &uCO_ODI_100D_00 },		// mandatory
+	{ 0x1017, UNSIGNED16, READ_WRITE, (void*) &uCO.HeartbeatTime },		// mandatory
+	{ 0x1018, SUBARRAY, READ_ONLY, (void*) &uCO_ODI_1018 },				// mandatory
 
-	{ 0xFFFF, UNDEFINED, NULL } // End of dictionary, mandatory
+	{ 0xFFFF, UNDEFINED, READ_ONLY, NULL } // End of dictionary, mandatory
 };
 
+//

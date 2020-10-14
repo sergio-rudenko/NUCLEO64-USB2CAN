@@ -43,7 +43,7 @@ MX_CAN_Init(void)
 
 	hcan.Instance = CAN;
 	hcan.Init.Prescaler = 32;
-	hcan.Init.Mode = CAN_MODE_NORMAL;
+	hcan.Init.Mode = CAN_MODE_LOOPBACK; //FIXME!
 	hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
 	hcan.Init.TimeSeg1 = CAN_BS1_6TQ;
 	hcan.Init.TimeSeg2 = CAN_BS2_5TQ;
@@ -267,9 +267,8 @@ HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *handle)
 	if (HAL_CAN_GetRxMessage(handle, CAN_RX_FIFO0, &canRxMsg.header,
 								canRxMsg.data) == HAL_OK)
 	{
-
 		lawicel_can_receive(pUartTxBuf, &canRxMsg);
-		uco_proceed(&canRxMsg);
+		uco_receive_to_buffer(&uCO, &canRxMsg);
 		canRxCounter++;
 	}
 }
@@ -281,9 +280,8 @@ HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *handle)
 	if (HAL_CAN_GetRxMessage(handle, CAN_RX_FIFO1, &canRxMsg.header,
 								canRxMsg.data) == HAL_OK)
 	{
-
 		lawicel_can_receive(pUartTxBuf, &canRxMsg);
-		uco_proceed(&canRxMsg);
+		uco_receive_to_buffer(&uCO, &canRxMsg);
 		canRxCounter++;
 	}
 }

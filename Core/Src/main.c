@@ -51,7 +51,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+char deviceSoftwareVersion[32] = "v0.04_DEV";
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -109,6 +109,10 @@ main(void)
 	/* uCANopen init */
 	uco_init(&uCO, uCO_OD);
 
+	//FIXME!
+	uCO.NodeId = 100;
+	uCO.NodeState = NODE_STATE_OPERATIONAL;
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -121,7 +125,9 @@ main(void)
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		uCO.HeartbeatTime = 1000;
+
+		uco_run(&uCO);
+
 	}
 	/* USER CODE END 3 */
 }

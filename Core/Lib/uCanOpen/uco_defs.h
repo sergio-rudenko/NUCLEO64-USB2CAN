@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include <rbuffer.h>
 #include "can.h"
 
 /** ----------------------------------------------------
@@ -64,9 +65,6 @@
 #define UCANOPEN_COB_ID_TPDO_4 	0x480
 #define UCANOPEN_COB_ID_RPDO_4 	0x500
 
-#define UCANOPEN_COB_ID_TSDO 	0x580
-#define UCANOPEN_COB_ID_RSDO 	0x600
-
 #define __IS_UCANOPEN_COB_ID_NMT(COB_ID)	(COB_ID == UCANOPEN_COB_ID_NMT)
 
 #define __IS_UCANOPEN_COB_ID_SYNC(COB_ID)	(COB_ID == UCANOPEN_COB_ID_SYNC)
@@ -88,6 +86,10 @@
 
 #define __UCANOPEN_NODE_ID_FROM_COB_ID(COB_ID)	(~(UCANOPEN_COB_ID_MASK) & COB_ID)
 
+/* Endianess */
+#define __UCANOPEN_16BIT_FROM_LE(x0, x1)			(x0 + (x1 << 8))
+#define __UCANOPEN_32BIT_FROM_LE(x0, x1, x2, x3)	(x0 + (x1 << 8) + (x2 << 16) + (x3 << 24))
+
 /* Object Dictionary Defines */
 #define UCANOPEN_OD_RPDO_REGISTER_FIRST			0x1400
 #define UCANOPEN_OD_RPDO_REGISTER_LAST			0x15FF
@@ -100,7 +102,7 @@
 typedef int8_t uCO_NodeId_t;
 #define UCANOPEN_NODE_ID_UNDEFINED	((uCO_NodeId_t) 0xFF)
 
-typedef uint32_t uCO_CobId_t;
+typedef uint16_t uCO_CobId_t;
 #define UCANOPEN_COB_ID_UNDEFINED	((uCO_CobId_t) 0xFFF)
 
 typedef uint16_t uCO_Time_t;
@@ -127,21 +129,36 @@ typedef enum uCO_BitTiming
 
 typedef enum uCO_NodeState
 {
-	INITIALIZATION = 0,
-	PRE_OPERATIONAL,
-	OPERATIONAL,
-	STOPPED,
+	NODE_STATE_INITIALIZATION = 0,
+	NODE_STATE_PREOPERATIONAL,
+	NODE_STATE_OPERATIONAL,
+	NODE_STATE_STOPPED,
 } uCO_NodeState_t;
 
 typedef enum uCO_OD_ItemType
 {
 	UNDEFINED = 0,
-	UNSIGNED8,
-	UNSIGNED16,
-	UNSIGNED32,
+	UNSIGNED8 ,
+	UNSIGNED16 ,
+	UNSIGNED32 ,
 	UNSIGNED64,
+	VISIBLE_STRING,
+	OCTET_STRING,
 	SUBARRAY,
 } uCO_OD_ItemType_t;
+
+typedef enum uCO_OD_ItemAccess
+{
+	READ_ONLY = 0,
+	READ_WRITE,
+} uCO_OD_ItemAccess_t;
+
+typedef struct uCO_CanMessage
+{
+	uCO_CobId_t CobId;
+	uint8_t length;
+	uint8_t data[8];
+} uCO_CanMessage_t;
 
 typedef union uCO_ErrorRegister
 {
@@ -163,7 +180,9 @@ typedef struct uCO_OD_Item
 {
 	uint16_t index;
 	uCO_OD_ItemType_t Type;
+	uCO_OD_ItemAccess_t Access;
 	void *address;
+	size_t size;
 } uCO_OD_Item_t;
 
 typedef struct uCO
@@ -179,10 +198,32 @@ typedef struct uCO
 	uint32_t UID[4]; // 128bit
 
 	uCO_OD_Item_t *OD;
+
+	rBuffer_t *rxBuf;
+	rBuffer_t *txBuf;
 } uCO_t;
 
 /* externs */
 extern uCO_t uCO;
 extern const uCO_OD_Item_t uCO_OD[];
+
+/* uCO API prototypes */
+
+uCO_ErrorStatus_t
+uco_send(uCO_t *p, uCO_CanMessage_t *m);
+
+/* Object Dictionary prototypes */
+
+uCO_OD_Item_t*
+uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub);
+
+uCO_OD_Item_t*
+uco_find_OD_RPDO_item(uCO_t *p, uint16_t id, uint8_t sub);
+
+uCO_OD_Item_t*
+uco_find_OD_TPDO_item(uCO_t *p, uint16_t id, uint8_t sub);
+
+uCO_OD_Item_t*
+uco_find_OD_Manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub);
 
 #endif /* LIB_UCANOPEN_UCO_DEFS_H_ */

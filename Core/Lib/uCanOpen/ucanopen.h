@@ -13,25 +13,19 @@
 #include "uco_nmt.h"
 #include "uco_sdo.h"
 
+#define UCANOPEN_RX_BUFFER_SIZE	64
+#define UCANOPEN_TX_BUFFER_SIZE 64
+
 void
 uco_init(uCO_t *p, const uCO_OD_Item_t *pOD);
 
-uCO_ErrorStatus_t
-uco_update();
+void
+uco_run(uCO_t *p);
+
+void
+uco_receive_to_buffer(uCO_t *p, CanRxMessage_t *msg);
 
 uCO_ErrorStatus_t
-uco_proceed(CanRxMessage_t *msg);
-
-uCO_OD_Item_t*
-uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub);
-
-uCO_OD_Item_t*
-uco_find_RPDO_OD_item(uCO_t *p, uint16_t id, uint8_t sub);
-
-uCO_OD_Item_t*
-uco_find_TPDO_OD_item(uCO_t *p, uint16_t id, uint8_t sub);
-
-uCO_OD_Item_t*
-uco_find_Manufacturer_OD_item(uCO_t *p, uint16_t id, uint8_t sub);
+uco_transmit_from_buffer(uCO_t *p);
 
 #endif /* LIB_UCANOPEN_UCANOPEN_H_ */
