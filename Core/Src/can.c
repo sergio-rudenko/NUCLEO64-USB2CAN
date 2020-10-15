@@ -43,7 +43,7 @@ MX_CAN_Init(void)
 
 	hcan.Instance = CAN;
 	hcan.Init.Prescaler = 32;
-	hcan.Init.Mode = CAN_MODE_LOOPBACK; //FIXME!
+	hcan.Init.Mode = CAN_MODE_NORMAL; //FIXME!
 	hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
 	hcan.Init.TimeSeg1 = CAN_BS1_6TQ;
 	hcan.Init.TimeSeg2 = CAN_BS2_5TQ;
