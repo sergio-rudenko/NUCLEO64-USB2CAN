@@ -108,7 +108,7 @@ const uint32_t uCO_ODI_1000_00 = 0x0UL;
  * 7 	|	Manufacturer Specific	|
  * 		|	error 					| No
  */
-const uint8_t uCO_ODI_1001_00 = 0x00; // NOTE: use field in uCO structure
+#define uCO_ODI_1001_00	uCO.ErrorRegister.value
 
 /** ----------------------------------------------------------------
  * [CAN_and_CANOpen.pdf] D.3.4 Manufacturer Status Register (1002h)
@@ -146,7 +146,7 @@ const char uCO_ODI_1009_00[] = "Prototype 1.0";
  * [CAN_and_CANOpen.pdf] D.3.11 Manufacturer Software Version (100Ah)
  * -------------------------------------------------------------------
  */
-char uCO_ODI_100A_00[] = ""; // implemented in main.c
+#define uCO_ODI_100A_00	deviceSoftwareVersion
 
 /** -------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.3 Guard Time (100Ch)
@@ -188,7 +188,7 @@ const uint8_t uCO_ODI_100D_00 = 0x00; // not implemented
  * Example:			4455h = 17493
  * 					The node will transmit a heartbeat message every 17.493 seconds
  */
-const uint16_t uCO_ODI_1017_00 = 1000; // NOTE: use field in uCO structure
+#define uCO_ODI_1017_00 uCO.NMT.HeartbeatTime
 
 /** -----------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.6 Identity Object (1018h)
@@ -244,16 +244,16 @@ const uCO_OD_Item_t uCO_ODI_1018[] =
 const uCO_OD_Item_t uCO_OD[] =
 {
 	/* index | type | access | address */
-	{ 0x1000, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1000_00 }, 		// mandatory
-	{ 0x1001, UNSIGNED8, READ_ONLY, (void*) &uCO.ErrorRegister.value },	// mandatory
-	{ 0x1002, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1002_00 },		// optional
+	{ 0x1000, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1000_00 }, 	// mandatory
+	{ 0x1001, UNSIGNED8, READ_ONLY, (void*) &uCO_ODI_1001_00 },		// mandatory
+	{ 0x1002, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1002_00 },	// optional
 	{ 0x1008, VISIBLE_STRING, READ_ONLY, (void*) &uCO_ODI_1008_00, sizeof(uCO_ODI_1008_00) },	// optional
 	{ 0x1009, VISIBLE_STRING, READ_ONLY, (void*) &uCO_ODI_1009_00, sizeof(uCO_ODI_1009_00) },	// optional
-	{ 0x100A, VISIBLE_STRING, READ_WRITE, (void*) &deviceSoftwareVersion, sizeof(deviceSoftwareVersion) },	// optional
-	{ 0x100C, UNSIGNED16, READ_WRITE, (void*) &uCO_ODI_100C_00 },		// mandatory
-	{ 0x100D, UNSIGNED8, READ_WRITE, (void*) &uCO_ODI_100D_00 },		// mandatory
-	{ 0x1017, UNSIGNED16, READ_WRITE, (void*) &uCO.HeartbeatTime },		// mandatory
-	{ 0x1018, SUBARRAY, READ_ONLY, (void*) &uCO_ODI_1018 },				// mandatory
+	{ 0x100A, VISIBLE_STRING, READ_ONLY, (void*) &uCO_ODI_100A_00, sizeof(uCO_ODI_100A_00) },	// optional
+	{ 0x100C, UNSIGNED16, READ_WRITE, (void*) &uCO_ODI_100C_00 },	// mandatory
+	{ 0x100D, UNSIGNED8, READ_WRITE, (void*) &uCO_ODI_100D_00 },	// mandatory
+	{ 0x1017, UNSIGNED16, READ_WRITE, (void*) &uCO_ODI_1017_00 },	// mandatory
+	{ 0x1018, SUBARRAY, READ_ONLY, (void*) &uCO_ODI_1018 },			// mandatory
 
 	{ 0xFFFF, UNDEFINED, READ_ONLY, NULL } // End of dictionary, mandatory
 };

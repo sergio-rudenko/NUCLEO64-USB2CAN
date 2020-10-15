@@ -55,6 +55,10 @@
 #define UCANOPEN_SDO_ABORT_REASON_TYPEMISMATCH    		0x06070010UL
 #define UCANOPEN_SDO_ABORT_REASON_UNKNOWN_SUB      		0x06090011UL
 #define UCANOPEN_SDO_ABORT_GENERAL_ERROR				0x08000000UL
+
+/**/
+#define UCANOPEN_SDO_TIMEOUT 							1000
+
 /* prototypes */
 
 uCO_ErrorStatus_t
@@ -62,5 +66,8 @@ uco_proceed_SDO_request(uCO_t *p, uint8_t *data);
 
 uCO_ErrorStatus_t
 uco_proceed_SDO_reply(uCO_t *p, uint8_t *data);
+
+uCO_ErrorStatus_t
+uco_SDO_abort(uCO_t *p, uint8_t *request, uint32_t reason);
 
 #endif /* LIB_UCANOPEN_UCO_SDO_H_ */

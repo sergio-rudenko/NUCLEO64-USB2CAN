@@ -52,6 +52,9 @@ uco_init(uCO_t *pCO, const uCO_OD_Item_t pOD[])
 
 	pCO->NodeState = NODE_STATE_INITIALIZATION;
 	pCO->NodeId = UCANOPEN_NODE_ID_UNDEFINED;
+
+	/* ticks sync */
+	pCO->ticks = HAL_GetTick();
 }
 
 /**
@@ -198,6 +201,42 @@ uco_run(uCO_t *p)
 {
 	uCO_CanMessage_t msg;
 
+	/* check timestamp and timeouts */
+	if (p->ticks < HAL_GetTick())
+	{
+		uCO_Time_t delta = HAL_GetTick() - p->ticks;
+		p->Timestamp += delta;
+		p->ticks += delta;
+
+		/* Heartbeat message */
+//		if (p->NMT.HeartbeatTime &&
+//			p->NMT.HeartbeatTimestamp + p->NMT.HeartbeatTime <= p->Timestamp)
+//		{
+//			uco_send_HEARTBEAT_message(p);
+//			p->NMT.HeartbeatTimestamp = p->Timestamp;
+//		}
+		if (p->NMT.HeartbeatTime)
+		{
+			uint16_t dt = p->Timestamp - p->NMT.HeartbeatTimestamp;
+
+			if (dt >= p->NMT.HeartbeatTime)
+			{
+				uco_send_HEARTBEAT_message(p);
+				p->NMT.HeartbeatTimestamp = p->Timestamp;
+			}
+		}
+
+		/* SDO process timeout */
+		if (p->SDO.Timeout &&
+			p->SDO.Timestamp + p->SDO.Timeout <= p->Timestamp)
+		{
+//			uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_TIMED_OUT);
+			p->SDO.Timestamp = p->Timestamp;
+			p->SDO.Timeout = 0;
+		}
+
+	}
+
 	/* check and proceed incoming messages */
 	while (ring_buffer_available(p->rxBuf))
 	{
@@ -230,11 +269,11 @@ priv_proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	/* switch protocol */
 	if (__IS_UCANOPEN_COB_ID_NMT(msg->CobId))
 	{
-		result = uco_proceed_NMT_command(msg->data, msg->length);
+		result = uco_proceed_NMT_command(p, msg->data, msg->length);
 	}
 	else if (__IS_UCANOPEN_COB_ID_SYNC(msg->CobId))
 	{
-		result = uco_proceed_SYNC_request(msg->data, msg->length);
+		result = uco_proceed_SYNC_request(p, msg->data, msg->length);
 	}
 	else if (__IS_UCANOPEN_COB_ID_EMCY(msg->CobId))
 	{
@@ -365,7 +404,8 @@ uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub)
 			}
 			else
 			{
-				return (sub == 0) ? &p->OD[i] : NULL;
+				return (sub == 0) ?
+					&p->OD[i] : NULL;
 			}
 		}
 	}

@@ -51,7 +51,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
 char deviceSoftwareVersion[32] = "v0.04_DEV";
+
+const uint16_t deviceTest16bitRO = 123;
+uint8_t deviceTestArray12bytes[12];
+uint8_t deviceTestArray256bytes[256];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -112,6 +118,17 @@ main(void)
 	//FIXME!
 	uCO.NodeId = 100;
 	uCO.NodeState = NODE_STATE_OPERATIONAL;
+	uCO.NMT.HeartbeatTime = 1000;
+
+	for (int i = 0; i < sizeof(deviceTestArray12bytes); i++)
+	{
+		deviceTestArray12bytes[i] = i * 2;
+	}
+
+	for (int i = 0; i < sizeof(deviceTestArray256bytes); i++)
+	{
+		deviceTestArray256bytes[i] = i;
+	}
 
 	/* USER CODE END 2 */
 
@@ -139,12 +156,9 @@ main(void)
 void
 SystemClock_Config(void)
 {
-	RCC_OscInitTypeDef RCC_OscInitStruct =
-	{ 0 };
-	RCC_ClkInitTypeDef RCC_ClkInitStruct =
-	{ 0 };
-	RCC_PeriphCLKInitTypeDef PeriphClkInit =
-	{ 0 };
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+	RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };
 
 	/** Configure LSE Drive Capability
 	 */

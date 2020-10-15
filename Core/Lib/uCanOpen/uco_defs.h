@@ -138,9 +138,9 @@ typedef enum uCO_NodeState
 typedef enum uCO_OD_ItemType
 {
 	UNDEFINED = 0,
-	UNSIGNED8 ,
-	UNSIGNED16 ,
-	UNSIGNED32 ,
+	UNSIGNED8,
+	UNSIGNED16,
+	UNSIGNED32,
 	UNSIGNED64,
 	VISIBLE_STRING,
 	OCTET_STRING,
@@ -185,17 +185,47 @@ typedef struct uCO_OD_Item
 	size_t size;
 } uCO_OD_Item_t;
 
+/* NMT */
+typedef struct uCO_NMT
+{
+	uCO_Time_t HeartbeatTime;
+	uCO_Time_t HeartbeatTimestamp;
+
+} uCO_NMT_t;
+
+/* SDO */
+typedef struct uCO_SDO
+{
+	struct
+	{
+		bool reading;
+		bool toggleBit;
+		size_t size;
+		size_t offset;
+		uCO_OD_Item_t *ODI;
+	} segmented;
+
+	uCO_Time_t Timeout;
+	uCO_Time_t Timestamp;
+
+} uCO_SDO_t;
+
+/* Instance */
 typedef struct uCO
 {
+	uint32_t UID[4]; // 128bit
+
 	uCO_NodeId_t NodeId;
 	uCO_NodeState_t NodeState;
 	uCO_BitTiming_t BitTiming;
 	uCO_ErrorRegister_t ErrorRegister;
 
-	uCO_Time_t HeartbeatTime;
-	uCO_Time_t HeartbeatTimestamp;
+	uCO_Time_t Timestamp;
+	uint32_t ticks;
 
-	uint32_t UID[4]; // 128bit
+	/* protocols */
+	uCO_NMT_t NMT;
+	uCO_SDO_t SDO;
 
 	uCO_OD_Item_t *OD;
 
