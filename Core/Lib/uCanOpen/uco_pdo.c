@@ -18,40 +18,17 @@ uco_pdo_on_tick(uCO_t *p)
 	/* TPDO periodic transmit */
 	for (int i = 0; i < sizeof(p->TPDO) / sizeof(p->TPDO[0]); i++)
 	{
-		if (p->TPDO[i].InhibitTime)
-		{
-			continue;
-		}
-
 		if (p->TPDO[i].EventTime)
 		{
 			dt = p->Timestamp - p->TPDO[i].EventTimestamp;
 
 			if (dt >= p->TPDO[i].EventTime)
 			{
-				uco_tpdo_transmit(p, i);
+				uco_tpdo_transmit(p, i + 1);
 				p->TPDO[i].EventTimestamp = p->Timestamp;
 			}
 		}
 	}
-}
-
-uCO_ErrorStatus_t
-uco_tpdo_init(uCO_TPDO_t *Tpdo, void *address, size_t size)
-{
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
-
-	if (size <= 8)
-	{
-		Tpdo->EventTime = 0;
-		Tpdo->InhibitTime = 0;
-
-		Tpdo->data.address = address;
-		Tpdo->data.size = size;
-
-		result = UCANOPEN_SUCCESS;
-	}
-	return result;
 }
 
 /**
@@ -68,6 +45,7 @@ uco_tpdo_transmit(uCO_t *p, int num)
 	{
 		return UCANOPEN_ERROR;
 	}
+
 	if (num < 0 || num > 4)
 	{
 		return UCANOPEN_ERROR;
@@ -99,7 +77,10 @@ uco_tpdo_transmit(uCO_t *p, int num)
 		{
 			message.CobId |= p->NodeId;
 			message.length = tpdo->data.size;
-			memcpy(message.data, tpdo->data.address, tpdo->data.size);
+
+			memcpy(message.data,
+					tpdo->data.address,
+					tpdo->data.size);
 
 			result = uco_send(p, &message);
 		}
@@ -111,6 +92,12 @@ __weak uCO_ErrorStatus_t
 uco_tpdo_prepare_data(uCO_t *p, int num)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+
+	if (p->TPDO[num].data.address &&
+		p->TPDO[num].data.size <= 8)
+	{
+		result = UCANOPEN_SUCCESS;
+	}
 	return result;
 }
 

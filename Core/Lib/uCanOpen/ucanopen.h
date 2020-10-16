@@ -10,6 +10,8 @@
 
 #include "uco_defs.h"
 #include "uco_emcy.h"
+#include "uco_sync.h"
+#include "uco_time.h"
 #include "uco_nmt.h"
 #include "uco_pdo.h"
 #include "uco_sdo.h"

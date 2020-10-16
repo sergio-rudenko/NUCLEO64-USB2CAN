@@ -78,32 +78,64 @@ static uCO_ErrorStatus_t
 proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	uCO_NodeId_t NodeId;
 
 	/* switch protocol */
-	if (__IS_UCANOPEN_COB_ID_NMT(msg->CobId))
+
+	/**
+	 * NMT Command
+	 */
+	if (__IS_UCANOPEN_COB_ID_NMT(msg->CobId) &&
+		msg->length == UCANOPEN_NMT_MESSAGE_LENGTH)
 	{
-		result = uco_proceed_nmt_command(p, msg->data, msg->length);
+		NodeId = __UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId);
+
+		if (NodeId == p->NodeId || NodeId == 0 /* Broadcast */)
+		{
+			result = uco_proceed_nmt_command(p, msg->data);
+		}
 	}
-	else if (__IS_UCANOPEN_COB_ID_SYNC(msg->CobId))
+	/**
+	 * SYNC Message
+	 */
+	else
+	if (__IS_UCANOPEN_COB_ID_SYNC(msg->CobId) &&
+		msg->length == UCANOPEN_SYNC_MESSAGE_LENGTH)
 	{
-		result = uco_proceed_sync_request(p, msg->data, msg->length);
+		result = uco_proceed_sync_request(p);
 	}
-	else if (__IS_UCANOPEN_COB_ID_EMCY(msg->CobId))
+	/**
+	 * EMCY Message
+	 */
+	else
+	if (__IS_UCANOPEN_COB_ID_EMCY(msg->CobId) &&
+		msg->length == UCANOPEN_EMCY_MESSAGE_LENGTH)
 	{
-		uCO_NodeId_t NodeId = __UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId);
-		result = uco_proceed_EMCY_message(NodeId, msg->data, msg->length);
+		NodeId = __UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId);
+
+		if (NodeId == 0 /* Broadcast EMCY */)
+		{
+			result = uco_proceed_emcy_message(p, msg->data);
+		}
+	}
+	/**
+	 * TIME Message
+	 */
+	else
+	if (__IS_UCANOPEN_COB_ID_TIME(msg->CobId) &&
+		msg->length == UCANOPEN_TIME_MESSAGE_LENGTH)
+	{
+		result = uco_proceed_time_message(p, msg->data);
 	}
 	/**
 	 * SDO Server -> Client
 	 */
-	else if (__IS_UCANOPEN_COB_ID_TSDO(msg->CobId))
+	else
+	if (__IS_UCANOPEN_COB_ID_TSDO(msg->CobId) &&
+		msg->length == UCANOPEN_SDO_LENGTH)
 	{
 		/* Check address */
 		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
-			return UCANOPEN_ERROR;
-
-		/* Check message format */
-		if (msg->length != UCANOPEN_SDO_LENGTH)
 			return UCANOPEN_ERROR;
 
 		/* Check node status for SDO processing */
@@ -116,14 +148,12 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	/**
 	 * SDO Client -> Server
 	 */
-	else if (__IS_UCANOPEN_COB_ID_RSDO(msg->CobId))
+	else
+	if (__IS_UCANOPEN_COB_ID_RSDO(msg->CobId) &&
+		msg->length == UCANOPEN_SDO_LENGTH)
 	{
 		/* Check address */
 		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
-			return UCANOPEN_ERROR;
-
-		/* Check message format */
-		if (msg->length != UCANOPEN_SDO_LENGTH)
 			return UCANOPEN_ERROR;
 
 		/* Check node status for SDO processing */
@@ -133,11 +163,13 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 
 		result = uco_proceed_sdo_request(p, msg->data);
 	}
-	else if (__IS_UCANOPEN_COB_ID_TPDO(msg->CobId))
+	else
+	if (__IS_UCANOPEN_COB_ID_TPDO(msg->CobId))
 	{
 		//TODO
 	}
-	else if (__IS_UCANOPEN_COB_ID_RPDO(msg->CobId))
+	else
+	if (__IS_UCANOPEN_COB_ID_RPDO(msg->CobId))
 	{
 		//TODO
 	}
@@ -193,30 +225,35 @@ uco_run(uCO_t *p)
  *
  */
 void
-uco_init(uCO_t *pCO, const uCO_OD_Item_t pOD[])
+uco_init(uCO_t *p, const uCO_OD_Item_t pOD[])
 {
 	/* Initialize ObjectDicrionary */
-	pCO->OD = (uCO_OD_Item_t*) pOD;
+	p->OD = (uCO_OD_Item_t*) pOD;
 
 	/* Initialize RX buffer */
-	pCO->rxBuf = &rxRingBuffer;
-	ring_buffer_init(pCO->rxBuf, rxData, sizeof(rxData));
+	p->rxBuf = &rxRingBuffer;
+	ring_buffer_init(p->rxBuf, rxData, sizeof(rxData));
 
 	/* Initialize TX buffer */
-	pCO->txBuf = &txRingBuffer;
-	ring_buffer_init(pCO->txBuf, txData, sizeof(txData));
+	p->txBuf = &txRingBuffer;
+	ring_buffer_init(p->txBuf, txData, sizeof(txData));
 
 	/* 128bit UID */
-	pCO->UID[0] = HAL_GetUIDw0();
-	pCO->UID[1] = HAL_GetUIDw1();
-	pCO->UID[2] = HAL_GetUIDw2();
-	pCO->UID[3] = 0x0UL; //serial
+	p->UID[0] = HAL_GetUIDw0();
+	p->UID[1] = HAL_GetUIDw1();
+	p->UID[2] = HAL_GetUIDw2();
+	p->UID[3] = 0x0UL; //serial
 
-	pCO->NodeState = NODE_STATE_INITIALIZATION;
-	pCO->NodeId = UCANOPEN_NODE_ID_UNDEFINED;
+	p->NodeState = NODE_STATE_INITIALIZATION;
+	p->NodeId = UCANOPEN_NODE_ID_UNDEFINED;
+
+	/* On SYNC Nodeguarding */
+	p->NMT.heartbeatOnSync = true;
+	p->NMT.GuardTime = 1500;
+	p->NMT.lifeTimeFactor = 2;
 
 	/* ticks sync */
-	pCO->ticks = HAL_GetTick();
+	p->ticks = HAL_GetTick();
 }
 
 /**

@@ -70,3 +70,4 @@ uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 	}
 	return NULL;
 }
+

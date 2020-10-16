@@ -8,7 +8,7 @@
 #include "uco_emcy.h"
 
 uCO_ErrorStatus_t
-uco_proceed_EMCY_message(uCO_NodeId_t NodeId, uint8_t *pData, uint32_t len)
+uco_proceed_emcy_message(uCO_t *p, uint8_t *data)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
 

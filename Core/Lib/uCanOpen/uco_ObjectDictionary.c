@@ -155,7 +155,8 @@ const char uCO_ODI_1009_00[] = "Prototype 1.0";
  * is transmitted by the master or must be received by the node. This entry must be imple-
  * mented if heartbeats are not used.
  */
-const uint16_t uCO_ODI_100C_00 = 0x0000; // not implemented
+#define uCO_ODI_100C_00	uCO.NMT.GuardTime
+
 
 /** ------------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.4 Life Time Factor (100Dh)
@@ -165,7 +166,7 @@ const uint16_t uCO_ODI_100C_00 = 0x0000; // not implemented
  * master or reception of a response from a slave before an error condition is generated.
  * This entry must be implemented if heartbeats are not used.
  */
-const uint8_t uCO_ODI_100D_00 = 0x00; // not implemented
+#define uCO_ODI_100D_00	uCO.NMT.lifeTimeFactor
 
 /** -------------------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.5 Producer Heartbeat Time (1017h)

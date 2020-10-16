@@ -64,8 +64,7 @@ const uint16_t deviceTest16bitRO = 123;
 uint8_t deviceTestArray12bytes[12];
 uint8_t deviceTestArray256bytes[256];
 
-uint8_t TPDO1_data[8];
-uint8_t TPDO2_data[8];
+bool uplinkStatus;
 
 /* USER CODE END PV */
 
@@ -134,7 +133,6 @@ main(void)
 	//FIXME!
 	uCO.NodeId = 100;
 	uCO.NodeState = NODE_STATE_OPERATIONAL;
-	uCO.NMT.HeartbeatTime = 1000;
 
 	for (int i = 0; i < sizeof(deviceTestArray12bytes); i++)
 	{
@@ -145,6 +143,9 @@ main(void)
 	{
 		deviceTestArray256bytes[i] = i;
 	}
+
+	//uco_tpdo_init(&uCO.TPDO[2], 2000, 0, 0);
+	//uCO.TPDO[2].sendOnSync = true;
 
 	/* USER CODE END 2 */
 
@@ -243,30 +244,59 @@ uCO_ErrorStatus_t
 uco_tpdo_prepare_data(uCO_t *p, int num)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+
+	static uint8_t tpdoData1[8];
+	static uint8_t tpdoData2[8];
+	static uint8_t tpdoData3[4];
+
 	uint32_t unixtime = now();
 
-	if (num == 1) {
-		TPDO1_data[0] = (unixtime) & 0xFF;
-		TPDO1_data[1] = (unixtime >> 8) & 0xFF;
-		TPDO1_data[2] = (unixtime >> 16) & 0xFF;
-		TPDO1_data[3] = (unixtime >> 24) & 0xFF;
+	if (num == 1)
+	{
+		tpdoData1[0] = (unixtime) & 0xFF;
+		tpdoData1[1] = (unixtime >> 8) & 0xFF;
+		tpdoData1[2] = (unixtime >> 16) & 0xFF;
+		tpdoData1[3] = (unixtime >> 24) & 0xFF;
 
-		memcpy(&TPDO1_data[4], deviceTestArray12bytes, 4);
+		memcpy(&tpdoData1[4], deviceTestArray12bytes, 4);
 
-		p->TPDO[0].data.address = TPDO1_data;
-		p->TPDO[0].data.size = sizeof(TPDO1_data);
-
-		result = UCANOPEN_SUCCESS;
-	}
-	if (num == 2) {
-		memcpy(TPDO2_data, &deviceTestArray12bytes[4], 8);
-
-		p->TPDO[1].data.address = TPDO2_data;
-		p->TPDO[1].data.size = sizeof(TPDO2_data);
+		p->TPDO[0].data.address = tpdoData1;
+		p->TPDO[0].data.size = sizeof(tpdoData1);
 
 		result = UCANOPEN_SUCCESS;
 	}
+
+	if (num == 2)
+	{
+		memcpy(tpdoData2, &deviceTestArray12bytes[4], 8);
+
+		p->TPDO[1].data.address = tpdoData2;
+		p->TPDO[1].data.size = sizeof(tpdoData2);
+
+		result = UCANOPEN_SUCCESS;
+	}
+
+	if (num == 3)
+	{
+		tpdoData3[0] = (unixtime) & 0xFF;
+		tpdoData3[1] = (unixtime >> 8) & 0xFF;
+		tpdoData3[2] = (unixtime >> 16) & 0xFF;
+		tpdoData3[3] = (unixtime >> 24) & 0xFF;
+
+		p->TPDO[2].data.address = tpdoData3;
+		p->TPDO[2].data.size = sizeof(tpdoData3);
+
+		result = UCANOPEN_SUCCESS;
+	}
+
 	return result;
+}
+
+
+void
+uco_nmt_on_uplink_status(uCO_t *p, bool alive)
+{
+	uplinkStatus = alive;
 }
 
 /* USER CODE END 4 */

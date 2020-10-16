@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #include <rbuffer.h>
+
 #include "can.h"
 
 /** ----------------------------------------------------
@@ -51,31 +52,16 @@
  */
 #define UCANOPEN_COB_ID_MASK 				0x780
 
-#define UCANOPEN_COB_ID_NMT 				0x000
-#define UCANOPEN_COB_ID_SYNC 				0x080
-#define UCANOPEN_COB_ID_EMCY 				0x080
-#define UCANOPEN_COB_ID_TIME 				0x100
-
-#define UCANOPEN_COB_ID_TPDO_1 				0x180
-#define UCANOPEN_COB_ID_TPDO_2 				0x280
-#define UCANOPEN_COB_ID_TPDO_3 				0x380
-#define UCANOPEN_COB_ID_TPDO_4 				0x480
-
-#define UCANOPEN_COB_ID_RPDO_1 				0x200
-#define UCANOPEN_COB_ID_RPDO_2 				0x300
-#define UCANOPEN_COB_ID_RPDO_3 				0x400
-#define UCANOPEN_COB_ID_RPDO_4 				0x500
-
-#define UCANOPEN_COB_ID_TSDO 				0x580
-#define UCANOPEN_COB_ID_RSDO 				0x600
-
 #define UCANOPEN_COB_ID_HEARTBEAT			0x700
+#define UCANOPEN_COB_ID_NODE_GUARDING		0x700
 
 #define __IS_UCANOPEN_COB_ID_NMT(COB_ID)	(COB_ID == UCANOPEN_COB_ID_NMT)
 
 #define __IS_UCANOPEN_COB_ID_SYNC(COB_ID)	(COB_ID == UCANOPEN_COB_ID_SYNC)
 
 #define __IS_UCANOPEN_COB_ID_EMCY(COB_ID)	((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_EMCY)
+
+#define __IS_UCANOPEN_COB_ID_TIME(COB_ID)	((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TIME)
 
 #define __IS_UCANOPEN_COB_ID_TPDO(COB_ID)	(((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_1) || \
 											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_2) || \
@@ -194,9 +180,14 @@ typedef struct uCO_OD_Item
 /* NMT */
 typedef struct uCO_NMT
 {
-	uCO_Time_t HeartbeatTime;
 	uCO_Time_t HeartbeatTimestamp;
+	uCO_Time_t HeartbeatTime;
+	bool heartbeatOnSync;
 
+	uCO_Time_t GuardTimestamp;
+	uCO_Time_t GuardTime;
+	uint8_t lifeTimeFactor;
+	bool uplinkIsAlive;
 } uCO_NMT_t;
 
 /* SDO */
@@ -214,19 +205,17 @@ typedef struct uCO_SDO
 	uint16_t index;
 	uint8_t sub;
 
-	uCO_Time_t Timeout;
 	uCO_Time_t Timestamp;
-
+	uCO_Time_t Timeout;
 } uCO_SDO_t;
 
 /* TPDO */
 typedef struct uCO_TPDO
 {
-	uCO_Time_t EventTime;
-	uCO_Time_t EventTimestamp;
+	bool sendOnSync;
 
-	uCO_Time_t InhibitTime;
-	uCO_Time_t InhibitTimestamp;
+	uCO_Time_t EventTimestamp;
+	uCO_Time_t EventTime;
 
 	struct
 	{

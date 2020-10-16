@@ -10,6 +10,9 @@
 
 #include "uco_defs.h"
 
+#define UCANOPEN_COB_ID_EMCY 				0x080
+#define UCANOPEN_EMCY_MESSAGE_LENGTH		8
+
 typedef struct uCO_EMCY
 {
 
@@ -18,6 +21,6 @@ typedef struct uCO_EMCY
 /* prototypes */
 
 uCO_ErrorStatus_t
-uco_proceed_EMCY_message(uCO_NodeId_t NodeId, uint8_t *pData, uint32_t len);
+uco_proceed_emcy_message(uCO_t *p, uint8_t *data);
 
 #endif /* LIB_UCANOPEN_UCO_EMCY_H_ */

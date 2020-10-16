@@ -10,27 +10,20 @@
 
 #include "uco_defs.h"
 
-/** ---------------------------------------------------------
- * [CAN_and_CANOpen.pdf] 2.5.5 RPDO Communication Parameters
- * [CAN_and_CANOpen.pdf] 2.5.6 TPDO Communication Parameters
- * ----------------------------------------------------------
- *	Sub	| Name	 				| Data type
- *	------------------------------------------
- *	 0	| Number of entries		| UNSIGNED8
- *	 1	| COB ID				| UNSIGNED32
- *	 2	| Transmission type		| UNSIGNED8
- *	 3	| Inhibit Time			| UNSIGNED16
- *	 4	| Reserved				| UNSIGNED8
- *	 5	| Event Timer			| UNSIGNED16
- */
+#define UCANOPEN_COB_ID_TPDO_1 				0x180
+#define UCANOPEN_COB_ID_TPDO_2 				0x280
+#define UCANOPEN_COB_ID_TPDO_3 				0x380
+#define UCANOPEN_COB_ID_TPDO_4 				0x480
+
+#define UCANOPEN_COB_ID_RPDO_1 				0x200
+#define UCANOPEN_COB_ID_RPDO_2 				0x300
+#define UCANOPEN_COB_ID_RPDO_3 				0x400
+#define UCANOPEN_COB_ID_RPDO_4 				0x500
 
 /* prototypes */
 
 void
 uco_pdo_on_tick(uCO_t *p);
-
-uCO_ErrorStatus_t
-uco_tpdo_init(uCO_TPDO_t *Tpdo, void *address, size_t size);
 
 uCO_ErrorStatus_t
 uco_tpdo_transmit(uCO_t *p, int num);

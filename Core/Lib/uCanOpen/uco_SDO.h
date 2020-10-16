@@ -12,7 +12,9 @@
 
 #include "uco_defs.h"
 
-#define UCANOPEN_SDO_LENGTH		8
+#define UCANOPEN_COB_ID_TSDO 							0x580
+#define UCANOPEN_COB_ID_RSDO 							0x600
+#define UCANOPEN_SDO_LENGTH								8
 
 /* SDO Read */
 #define UCANOPEN_SDO_READ_REQUEST						0x40

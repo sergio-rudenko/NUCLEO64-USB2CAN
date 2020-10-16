@@ -13,7 +13,7 @@
 void
 uco_nmt_on_tick(uCO_t *p)
 {
-	uint16_t dt;
+	uint16_t dt, uplinkLifeTimeout;
 
 	/* Heartbeat message */
 	if (p->NMT.HeartbeatTime)
@@ -26,12 +26,17 @@ uco_nmt_on_tick(uCO_t *p)
 			p->NMT.HeartbeatTimestamp = p->Timestamp;
 		}
 	}
-	//		if (p->NMT.HeartbeatTime &&
-	//			p->NMT.HeartbeatTimestamp + p->NMT.HeartbeatTime <= p->Timestamp)
-	//		{
-	//			uco_send_HEARTBEAT_message(p);
-	//			p->NMT.HeartbeatTimestamp = p->Timestamp;
-	//		}
+	else if (p->NMT.GuardTime)
+	{
+		dt = p->Timestamp - p->NMT.GuardTimestamp;
+		uplinkLifeTimeout = p->NMT.GuardTime * p->NMT.lifeTimeFactor;
+
+		if (p->NMT.uplinkIsAlive != (dt < uplinkLifeTimeout))
+		{
+			p->NMT.uplinkIsAlive = (dt < uplinkLifeTimeout);
+			uco_nmt_on_uplink_status(p, p->NMT.uplinkIsAlive);
+		}
+	}
 }
 
 /**
@@ -45,7 +50,8 @@ uco_send_heartbeat_message(uCO_t *p)
 	msg.CobId = UCANOPEN_COB_ID_HEARTBEAT | p->NodeId;
 	msg.length = UCANOPEN_HEARTBEAT_MESSAGE_LENGTH;
 
-	switch (p->NodeState) {
+	switch (p->NodeState)
+	{
 		case NODE_STATE_PREOPERATIONAL:
 			msg.data[0] = UCANOPEN_HEARTBEAT_NODE_STATE_PREOPERATIONAL;
 			break;
@@ -68,11 +74,11 @@ uco_send_heartbeat_message(uCO_t *p)
  *
  */
 uCO_ErrorStatus_t
-uco_proceed_nmt_command(uCO_t *p, uint8_t *pData, uint32_t len)
+uco_proceed_nmt_command(uCO_t *p, uint8_t *pData)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
 
-	//TODO
+//TODO
 
 	return result;
 }
@@ -80,12 +86,8 @@ uco_proceed_nmt_command(uCO_t *p, uint8_t *pData, uint32_t len)
 /**
  *
  */
-uCO_ErrorStatus_t
-uco_proceed_sync_request(uCO_t *p, uint8_t *pData, uint32_t len)
+__weak void
+uco_nmt_on_uplink_status(uCO_t *p, bool alive)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
 
-	//TODO
-
-	return result;
 }
