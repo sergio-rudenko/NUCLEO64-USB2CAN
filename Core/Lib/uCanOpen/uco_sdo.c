@@ -20,38 +20,24 @@
 /**
  *
  */
-uCO_ErrorStatus_t
-uco_SDO_abort(uCO_t *p, uint8_t *request, uint32_t reason)
+static void
+sdo_reset_server_process(uCO_t *p)
 {
-	uCO_CanMessage_t reply = { 0 };
+	p->SDO.segmented.offset = 0;
+	p->SDO.segmented.size = 0;
 
-	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
-	reply.length = UCANOPEN_SDO_LENGTH;
+	p->SDO.Item = NULL;
+	p->SDO.index = 0;
+	p->SDO.sub = 0;
 
-	reply.data[0] = UCANOPEN_SDO_ABORT_CS;
-
-	if (request)
-	{
-		/* index and sub */
-		reply.data[1] = request[1];
-		reply.data[2] = request[2];
-		reply.data[3] = request[3];
-	}
-
-	/* reason to little endian */
-	reply.data[4] = (reason) & 0xFF;
-	reply.data[5] = (reason >> 8) & 0xFF;
-	reply.data[6] = (reason >> 16) & 0xFF;
-	reply.data[7] = (reason >> 24) & 0xFF;
-
-	return uco_send(p, &reply);
+	p->SDO.Timeout = 0;
 }
 
 /**
  *
  */
 static uCO_ErrorStatus_t
-SDO_expedited_read_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
+sdo_expedited_read_reply(uCO_t *p)
 {
 	uCO_CanMessage_t reply = { 0 };
 	uint32_t value;
@@ -60,16 +46,16 @@ SDO_expedited_read_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
 	reply.length = UCANOPEN_SDO_LENGTH;
 
 	/* index and sub */
-	reply.data[1] = request[1];
-	reply.data[2] = request[2];
-	reply.data[3] = request[3];
+	reply.data[1] = (p->SDO.index) & 0xFF;
+	reply.data[2] = (p->SDO.index >> 8) & 0xFF;
+	reply.data[3] = (p->SDO.sub);
 
-	switch (item->Type)
+	switch (p->SDO.Item->Type)
 	{
 		case UNSIGNED8:
 			reply.data[0] = UCANOPEN_SDO_EXPEDITED_READ_1BYTE_REPLY;
 
-			value = *((uint8_t*) item->address);
+			value = *((uint8_t*) p->SDO.Item->address);
 
 			reply.data[4] = (value) & 0xFF;
 			break;
@@ -77,7 +63,7 @@ SDO_expedited_read_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
 		case UNSIGNED16:
 			reply.data[0] = UCANOPEN_SDO_EXPEDITED_READ_2BYTES_REPLY;
 
-			value = *((uint16_t*) item->address);
+			value = *((uint16_t*) p->SDO.Item->address);
 
 			reply.data[4] = (value) & 0xFF;
 			reply.data[5] = (value >> 8) & 0xFF;
@@ -86,7 +72,7 @@ SDO_expedited_read_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
 		case UNSIGNED32:
 			reply.data[0] = UCANOPEN_SDO_EXPEDITED_READ_4BYTES_REPLY;
 
-			value = *((uint32_t*) item->address);
+			value = *((uint32_t*) p->SDO.Item->address);
 
 			reply.data[4] = (value) & 0xFF;
 			reply.data[5] = (value >> 8) & 0xFF;
@@ -97,10 +83,6 @@ SDO_expedited_read_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
 		default:
 			return UCANOPEN_ERROR;
 	}
-
-	/* reset timeout  */
-	p->SDO.Timeout = 0;
-
 	return uco_send(p, &reply);
 }
 
@@ -108,7 +90,7 @@ SDO_expedited_read_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
  *
  */
 static uCO_ErrorStatus_t
-SDO_expedited_write_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
+sdo_expedited_write_reply(uCO_t *p, uint8_t clientCommand, uint8_t *clientData)
 {
 	uCO_CanMessage_t reply = { 0 };
 	uint32_t value;
@@ -117,40 +99,39 @@ SDO_expedited_write_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
 	reply.length = UCANOPEN_SDO_LENGTH;
 
 	/* index and sub */
-	reply.data[1] = request[1];
-	reply.data[2] = request[2];
-	reply.data[3] = request[3];
+	reply.data[1] = (p->SDO.index) & 0xFF;
+	reply.data[2] = (p->SDO.index >> 8) & 0xFF;
+	reply.data[3] = (p->SDO.sub);
 
 	reply.data[0] = UCANOPEN_SDO_WRITE_REPLY;
 
-	switch (request[0] /* CCS */)
+	switch (clientCommand)
 	{
 		case UCANOPEN_SDO_EXPEDITED_WRITE_1BYTE_REQUEST:
-			value = request[4];
-			*((uint8_t*) item->address) = value;
+			value = clientData[0];
+
+			*((uint8_t*) p->SDO.Item->address) = value;
 			break;
 
 		case UCANOPEN_SDO_EXPEDITED_WRITE_2BYTES_REQUEST:
-			value = request[4];
-			value += request[5] << 8;
-			*((uint16_t*) item->address) = value;
+			value = clientData[0];
+			value += clientData[1] << 8;
+
+			*((uint16_t*) p->SDO.Item->address) = value;
 			break;
 
 		case UCANOPEN_SDO_EXPEDITED_WRITE_4BYTES_REQUEST:
-			value = request[4];
-			value += request[5] << 8;
-			value += request[6] << 16;
-			value += request[7] << 24;
-			*((uint32_t*) item->address) = value;
+			value = clientData[0];
+			value += clientData[1] << 8;
+			value += clientData[2] << 16;
+			value += clientData[3] << 24;
+
+			*((uint32_t*) p->SDO.Item->address) = value;
 			break;
 
 		default:
 			return UCANOPEN_ERROR;
 	}
-
-	/* reset timeout  */
-	p->SDO.Timeout = 0;
-
 	return uco_send(p, &reply);
 }
 
@@ -158,43 +139,42 @@ SDO_expedited_write_reply(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
  *
  */
 static uCO_ErrorStatus_t
-SDO_segmented_read_handshake(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
+sdo_segmented_read_handshake(uCO_t *p)
 {
 	uCO_CanMessage_t reply = { 0 };
 
 	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
 	reply.length = UCANOPEN_SDO_LENGTH;
 
-	switch (item->Type)
+	switch (p->SDO.Item->Type)
 	{
 		case UNSIGNED64:
 			p->SDO.segmented.size = sizeof(uint64_t);
 			break;
 
 		case OCTET_STRING:
-			p->SDO.segmented.size = item->size;
+			p->SDO.segmented.size = p->SDO.Item->size;
 			break;
 
 		case VISIBLE_STRING:
-			p->SDO.segmented.size = strlen((char*) item->address);
+			p->SDO.segmented.size = strlen((char*) p->SDO.Item->address);
 			break;
 
 		default:
-			uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_UNSUPPORTED);
+			uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_UNSUPPORTED);
 			return UCANOPEN_ERROR;
 	}
 
-	p->SDO.segmented.reading = true;
 	p->SDO.segmented.toggleBit = true;
+	p->SDO.segmented.reading = true;
 	p->SDO.segmented.offset = 0;
-	p->SDO.segmented.ODI = item;
 
 	reply.data[0] = UCANOPEN_SDO_SEGMENTED_READ_REPLY;
 
 	/* index and sub */
-	reply.data[1] = request[1];
-	reply.data[2] = request[2];
-	reply.data[3] = request[3];
+	reply.data[1] = (p->SDO.index) & 0xFF;
+	reply.data[2] = (p->SDO.index >> 8) & 0xFF;
+	reply.data[3] = (p->SDO.sub);
 
 	/* size of data */
 	reply.data[4] = (p->SDO.segmented.size) & 0xFF;
@@ -213,36 +193,30 @@ SDO_segmented_read_handshake(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
  *
  */
 static uCO_ErrorStatus_t
-SDO_segmented_read_process(uCO_t *p, uint8_t *request)
+sdo_segmented_read_process(uCO_t *p, uint8_t clientCommand)
 {
+	uCO_CanMessage_t reply = { 0 };
+
+	bool toggleBit = (clientCommand >> 4) & 0x1;
+	uint8_t *data = (uint8_t*) p->SDO.Item->address;
+
 	bool lastSegment;
 	size_t freeBytes;
-
-	bool toggleBit = (request[0] >> 4) & 0x1;
-	uint8_t *data = (uint8_t*) p->SDO.segmented.ODI->address;
-
-	uCO_CanMessage_t reply = { 0 };
 
 	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
 	reply.length = UCANOPEN_SDO_LENGTH;
 
-	/* Check process */
-	if (p->SDO.segmented.reading == false)
+	/* Check process flow */
+	if (p->SDO.Item == NULL || p->SDO.segmented.reading == false)
 	{
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-
-		uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_UNKNOWN_COMMAND);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_UNKNOWN_COMMAND);
 		return UCANOPEN_ERROR;
 	}
 
 	/* Check Toggle Bit */
 	if (toggleBit == p->SDO.segmented.toggleBit)
 	{
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-
-		uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_TOGGLE_BIT_NOT_ALTERED);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_TOGGLE_BIT_NOT_ALTERED);
 		return UCANOPEN_ERROR;
 	}
 	else
@@ -253,28 +227,19 @@ SDO_segmented_read_process(uCO_t *p, uint8_t *request)
 	/* Check remaining data */
 	if (p->SDO.segmented.offset >= p->SDO.segmented.size)
 	{
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-
-		uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
 		return UCANOPEN_ERROR;
 	}
+
 	if (p->SDO.segmented.size - p->SDO.segmented.offset <= 7)
 	{
 		freeBytes = (7 - (p->SDO.segmented.size - p->SDO.segmented.offset));
 		lastSegment = true;
-
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
 	}
 	else
 	{
 		freeBytes = 0;
 		lastSegment = false;
-
-		/* update timeout and timestamp */
-		p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
-		p->SDO.Timestamp = p->Timestamp;
 	}
 
 	/* Data */
@@ -287,6 +252,16 @@ SDO_segmented_read_process(uCO_t *p, uint8_t *request)
 	/* Server CS */
 	reply.data[0] = (toggleBit << 4) | (freeBytes << 1) | lastSegment;
 
+	if (lastSegment)
+	{
+		sdo_reset_server_process(p);
+	}
+	else
+	{
+		/* update timeout and timestamp */
+		p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+		p->SDO.Timestamp = p->Timestamp;
+	}
 	return uco_send(p, &reply);
 }
 
@@ -294,47 +269,44 @@ SDO_segmented_read_process(uCO_t *p, uint8_t *request)
  *
  */
 static uCO_ErrorStatus_t
-SDO_segmented_write_handshake(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
+sdo_segmented_write_handshake(uCO_t *p)
 {
 	uCO_CanMessage_t reply = { 0 };
 
-	p->SDO.segmented.size = request[4];
-	p->SDO.segmented.size += request[5] << 8;
-	p->SDO.segmented.size += request[6] << 16;
-	p->SDO.segmented.size += request[7] << 24;
-
 	/* Check oversized write attempt */
-	if ((item->Type == UNSIGNED64) && (p->SDO.segmented.size > sizeof(uint64_t)))
+	if ((p->SDO.Item->Type == UNSIGNED64) &&
+		(p->SDO.segmented.size > sizeof(uint64_t)))
 	{
-		uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
 		return UCANOPEN_ERROR;
 	}
-	if ((item->Type == OCTET_STRING) && (p->SDO.segmented.size > item->size))
+	if ((p->SDO.Item->Type == OCTET_STRING) &&
+		(p->SDO.segmented.size > p->SDO.Item->size))
 	{
-		uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
 		return UCANOPEN_ERROR;
 	}
-	if ((item->Type == VISIBLE_STRING) && (p->SDO.segmented.size > item->size - 1))
+	if ((p->SDO.Item->Type == VISIBLE_STRING) &&
+		(p->SDO.segmented.size > p->SDO.Item->size - 1))
 	{
-		uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
 		return UCANOPEN_ERROR;
 	}
 
 	p->SDO.segmented.reading = false;
 	p->SDO.segmented.toggleBit = true;
 	p->SDO.segmented.offset = 0;
-	p->SDO.segmented.ODI = item;
 
 	/* Prepare reply */
 	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
 	reply.length = UCANOPEN_SDO_LENGTH;
 
-	/* index and sub */
-	reply.data[1] = request[1];
-	reply.data[2] = request[2];
-	reply.data[3] = request[3];
-
 	reply.data[0] = UCANOPEN_SDO_WRITE_REPLY;
+
+	/* index and sub */
+	reply.data[1] = (p->SDO.index) & 0xFF;
+	reply.data[2] = (p->SDO.index >> 8) & 0xFF;
+	reply.data[3] = p->SDO.sub;
 
 	/* set timeout and update timestamp */
 	p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
@@ -347,30 +319,25 @@ SDO_segmented_write_handshake(uCO_t *p, uint8_t *request, uCO_OD_Item_t *item)
  *
  */
 static uCO_ErrorStatus_t
-SDO_segmented_write_process(uCO_t *p, uint8_t *request)
+sdo_segmented_write_process(uCO_t *p, uint8_t clientCommand, uint8_t *clientData)
 {
-	bool toggleBit = (request[0] >> 4) & 0x1;
-	bool lastSegment = (request[0]) & 0x1;
-	size_t freeBytes = (request[0] >> 1) & 0x7;
-	uint8_t *data = (uint8_t*) p->SDO.segmented.ODI->address;
+	bool toggleBit = (clientCommand >> 4) & 0x1;
+	bool lastSegment = (clientCommand) & 0x1;
+	size_t freeBytes = (clientCommand >> 1) & 0x7;
 
-	/* Check process */
-	if (p->SDO.segmented.reading == true)
+	uint8_t *data = (uint8_t*) p->SDO.Item->address;
+
+	/* Check process flow */
+	if (p->SDO.Item == NULL || p->SDO.segmented.reading == true)
 	{
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-
-		uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_UNKNOWN_COMMAND);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_UNKNOWN_COMMAND);
 		return UCANOPEN_ERROR;
 	}
 
 	/* Check Toggle Bit */
 	if (toggleBit == p->SDO.segmented.toggleBit)
 	{
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-
-		uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_TOGGLE_BIT_NOT_ALTERED);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_TOGGLE_BIT_NOT_ALTERED);
 		return UCANOPEN_ERROR;
 	}
 	else
@@ -387,33 +354,15 @@ SDO_segmented_write_process(uCO_t *p, uint8_t *request)
 	/* Check remaining data */
 	if (p->SDO.segmented.offset + (7 - freeBytes) > p->SDO.segmented.size)
 	{
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-
-		uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
 		return UCANOPEN_ERROR;
 	}
 
 	/* Write data */
 	for (int i = 0; i < (7 - freeBytes); i++)
 	{
-		data[p->SDO.segmented.offset] = request[1 + i];
+		data[p->SDO.segmented.offset] = clientData[i];
 		p->SDO.segmented.offset++;
-	}
-
-	/* Update offset if lastSegment */
-	if (lastSegment)
-	{
-		p->SDO.segmented.offset = p->SDO.segmented.size;
-
-		/* reset timeout  */
-		p->SDO.Timeout = 0;
-	}
-	else
-	{
-		/* update timeout and timestamp */
-		p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
-		p->SDO.Timestamp = p->Timestamp;
 	}
 
 	uCO_CanMessage_t reply = { 0 };
@@ -424,6 +373,67 @@ SDO_segmented_write_process(uCO_t *p, uint8_t *request)
 	reply.data[0] = UCANOPEN_SDO_SEGMENTED_WRITE_SEGMENT_REPLY;
 	reply.data[0] |= toggleBit << 4;
 
+	if (lastSegment)
+	{
+		sdo_reset_server_process(p);
+	}
+	else
+	{
+		/* update timeout and timestamp */
+		p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+		p->SDO.Timestamp = p->Timestamp;
+	}
+	return uco_send(p, &reply);
+}
+
+/**
+ *
+ */
+void
+uco_sdo_on_tick(uCO_t *p)
+{
+	uint16_t dt;
+
+	/* SDO process timeout */
+	if (p->SDO.Timeout)
+	{
+		dt = p->Timestamp - p->SDO.Timestamp;
+
+		if (dt >= p->SDO.Timeout)
+		{
+//			uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_TIMED_OUT);
+			p->SDO.Timestamp = p->Timestamp;
+			p->SDO.Timeout = 0;
+		}
+	}
+}
+
+/**
+ *
+ */
+uCO_ErrorStatus_t
+uco_sdo_abort(uCO_t *p, uint32_t reason)
+{
+	uCO_CanMessage_t reply = { 0 };
+
+	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
+	reply.length = UCANOPEN_SDO_LENGTH;
+
+	reply.data[0] = UCANOPEN_SDO_ABORT_CS;
+
+	/* index and sub */
+	reply.data[1] = (p->SDO.index) & 0xFF;
+	reply.data[2] = (p->SDO.index >> 8) & 0xFF;
+	reply.data[3] = p->SDO.sub;
+
+	/* reason */
+	reply.data[4] = (reason) & 0xFF;
+	reply.data[5] = (reason >> 8) & 0xFF;
+	reply.data[6] = (reason >> 16) & 0xFF;
+	reply.data[7] = (reason >> 24) & 0xFF;
+
+	sdo_reset_server_process(p);
+
 	return uco_send(p, &reply);
 }
 
@@ -431,45 +441,53 @@ SDO_segmented_write_process(uCO_t *p, uint8_t *request)
  * SDO Server
  */
 uCO_ErrorStatus_t
-uco_proceed_SDO_request(uCO_t *p, uint8_t *request)
+uco_proceed_sdo_request(uCO_t *p, uint8_t *request)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
 
-	uCO_OD_Item_t *item;
-	uint16_t index;
-	uint8_t sub;
+	uint8_t clientCommand = request[0];
+	uint8_t ccs = clientCommand & 0xF0;
+
+	/* Abort command from client */
+	if (ccs == UCANOPEN_SDO_ABORT_CS)
+	{
+		sdo_reset_server_process(p);
+		return UCANOPEN_SUCCESS;
+	}
 
 	/* (Segmented) READ next segment request */
-	if (request[0] == UCANOPEN_SDO_SEGMENTED_READ_SEGMENT_T0_REQUEST ||
-		request[0] == UCANOPEN_SDO_SEGMENTED_READ_SEGMENT_T1_REQUEST)
+	if (ccs == UCANOPEN_SDO_SEGMENTED_READ_SEGMENT_T0_REQUEST ||
+		ccs == UCANOPEN_SDO_SEGMENTED_READ_SEGMENT_T1_REQUEST)
 	{
-		return SDO_segmented_read_process(p, request);
+		return sdo_segmented_read_process(p, clientCommand);
 	}
 
 	/* (Segmented) WRITE next segment request */
-	if ((request[0] & 0xF0) == UCANOPEN_SDO_SEGMENTED_WRITE_SEGMENT_T0_REQUEST ||
-		(request[0] & 0xF0) == UCANOPEN_SDO_SEGMENTED_WRITE_SEGMENT_T1_REQUEST)
+	if (ccs == UCANOPEN_SDO_SEGMENTED_WRITE_SEGMENT_T0_REQUEST ||
+		ccs == UCANOPEN_SDO_SEGMENTED_WRITE_SEGMENT_T1_REQUEST)
 	{
-		return SDO_segmented_write_process(p, request);
+		return sdo_segmented_write_process(p, clientCommand, &request[1]);
 	}
 
-	/* Try to find Object Dictionary item by index */
-	index = __UCANOPEN_16BIT_FROM_LE(request[1], request[2]);
-	item = uco_find_OD_item(p, index, 0x00/* sub */);
+	/* Get requested index and sub */
+	p->SDO.index = request[1] | (request[2] << 8);
+	p->SDO.sub = request[3];
 
-	if (!item)
+	/* Try to find Object Dictionary item by index */
+	p->SDO.Item = uco_find_od_item(p, p->SDO.index, 0x00/* sub */);
+
+	if (!p->SDO.Item)
 	{
-		uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_NOT_EXISTS);
+		uco_sdo_abort(p,UCANOPEN_SDO_ABORT_REASON_NOT_EXISTS);
 		return UCANOPEN_ERROR;
 	}
 
 	/* Try to find Object Dictionary item by index and sub */
-	sub = request[3];
-	item = uco_find_OD_item(p, index, sub);
+	p->SDO.Item = uco_find_od_item(p, p->SDO.index, p->SDO.sub);
 
-	if (!item)
+	if (!p->SDO.Item)
 	{
-		uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_UNKNOWN_SUB);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_UNKNOWN_SUB);
 		return UCANOPEN_ERROR;
 	}
 
@@ -478,15 +496,15 @@ uco_proceed_SDO_request(uCO_t *p, uint8_t *request)
 	/* (Expedited|Segmented) READ OD item request */
 	if (request[0] == UCANOPEN_SDO_READ_REQUEST)
 	{
-		if (item->Type == UNSIGNED64 ||
-			item->Type == OCTET_STRING ||
-			item->Type == VISIBLE_STRING)
+		if (p->SDO.Item->Type == UNSIGNED64 ||
+			p->SDO.Item->Type == OCTET_STRING ||
+			p->SDO.Item->Type == VISIBLE_STRING)
 		{
-			result = SDO_segmented_read_handshake(p, request, item);
+			result = sdo_segmented_read_handshake(p);
 		}
 		else
 		{
-			result = SDO_expedited_read_reply(p, request, item);
+			result = sdo_expedited_read_reply(p);
 		}
 	}
 	/* (Expedited) WRITE OD item request */
@@ -495,13 +513,13 @@ uco_proceed_SDO_request(uCO_t *p, uint8_t *request)
 		request[0] == UCANOPEN_SDO_EXPEDITED_WRITE_2BYTES_REQUEST ||
 		request[0] == UCANOPEN_SDO_EXPEDITED_WRITE_4BYTES_REQUEST)
 	{
-		if (item->Access == READ_WRITE)
+		if (p->SDO.Item->Access == READ_WRITE)
 		{
-			result = SDO_expedited_write_reply(p, request, item);
+			result = sdo_expedited_write_reply(p, clientCommand, &request[4]);
 		}
 		else
 		{
-			uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_READONLY);
+			uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_READONLY);
 			result = UCANOPEN_ERROR;
 		}
 	}
@@ -509,13 +527,19 @@ uco_proceed_SDO_request(uCO_t *p, uint8_t *request)
 	else
 	if (request[0] == UCANOPEN_SDO_SEGMENTED_WRITE_REQUEST)
 	{
-		if (item->Access == READ_WRITE)
+		if (p->SDO.Item->Access == READ_WRITE)
 		{
-			result = SDO_segmented_write_handshake(p, request, item);
+			/* requested size */
+			p->SDO.segmented.size = request[4];
+			p->SDO.segmented.size += request[5] << 8;
+			p->SDO.segmented.size += request[6] << 16;
+			p->SDO.segmented.size += request[7] << 24;
+
+			result = sdo_segmented_write_handshake(p);
 		}
 		else
 		{
-			uco_SDO_abort(p, request, UCANOPEN_SDO_ABORT_REASON_READONLY);
+			uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_READONLY);
 			result = UCANOPEN_ERROR;
 		}
 	}
@@ -530,7 +554,7 @@ uco_proceed_SDO_request(uCO_t *p, uint8_t *request)
  * SDO Client
  */
 uCO_ErrorStatus_t
-uco_proceed_SDO_reply(uCO_t *p, uint8_t *data)
+uco_proceed_sdo_reply(uCO_t *p, uint8_t *data)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
 

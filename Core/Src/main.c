@@ -51,12 +51,21 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+char deviceSoftwareVersion[32] = "v0.05_DEV";
 
-char deviceSoftwareVersion[32] = "v0.04_DEV";
+static Button_t UserButton;
+Button_t *pUserButton = &UserButton;
 
+static Signal_t UserLed;
+Signal_t *pUserLed = &UserLed;
+
+// Manufacturer OD
 const uint16_t deviceTest16bitRO = 123;
 uint8_t deviceTestArray12bytes[12];
 uint8_t deviceTestArray256bytes[256];
+
+uint8_t TPDO1_data[8];
+uint8_t TPDO2_data[8];
 
 /* USER CODE END PV */
 
@@ -108,6 +117,13 @@ main(void)
 	MX_CAN_Init();
 	MX_RTC_Init();
 	/* USER CODE BEGIN 2 */
+
+	/* Clock */
+	set_time(946730096);   // Sat, 01 Aug 2020 13:37:00 GMT
+
+	/* interface */
+	*pUserLed = signal_init(LED_GPIO_Port, LED_Pin, SignalActiveLevel_HIGH, 1);
+	*pUserButton = button_init(BUTTON_GPIO_Port, BUTTON_Pin, ButtonActiveLevel_LOW, 1);
 
 	/* Enable UART receive */
 	UART2CAN_UART_Receive(&huart2, pUartRxBuf);
@@ -200,6 +216,58 @@ SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void
+button_released_callback(Button_t *p)
+{
+	if (p->PrevState == ButtonState_Pressed)
+	{
+		signal_blink(pUserLed, 100, 2,
+						signal_get_output(pUserLed) ?
+							SIGNAL_INVERTED : SIGNAL_NORMAL);
+
+		uco_tpdo_transmit(&uCO, 1);
+		uco_tpdo_transmit(&uCO, 2);
+	}
+}
+
+void
+button_pressed_long_callback(Button_t *p)
+{
+	signal_blink(pUserLed, 150, 3,
+					signal_get_output(pUserLed) ?
+						SIGNAL_INVERTED : SIGNAL_NORMAL);
+}
+
+uCO_ErrorStatus_t
+uco_tpdo_prepare_data(uCO_t *p, int num)
+{
+	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	uint32_t unixtime = now();
+
+	if (num == 1) {
+		TPDO1_data[0] = (unixtime) & 0xFF;
+		TPDO1_data[1] = (unixtime >> 8) & 0xFF;
+		TPDO1_data[2] = (unixtime >> 16) & 0xFF;
+		TPDO1_data[3] = (unixtime >> 24) & 0xFF;
+
+		memcpy(&TPDO1_data[4], deviceTestArray12bytes, 4);
+
+		p->TPDO[0].data.address = TPDO1_data;
+		p->TPDO[0].data.size = sizeof(TPDO1_data);
+
+		result = UCANOPEN_SUCCESS;
+	}
+	if (num == 2) {
+		memcpy(TPDO2_data, &deviceTestArray12bytes[4], 8);
+
+		p->TPDO[1].data.address = TPDO2_data;
+		p->TPDO[1].data.size = sizeof(TPDO2_data);
+
+		result = UCANOPEN_SUCCESS;
+	}
+	return result;
+}
 
 /* USER CODE END 4 */
 

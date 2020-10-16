@@ -12,8 +12,6 @@
 
 #include "uco_defs.h"
 
-#define UCANOPEN_COB_ID_TSDO 	0x580
-#define UCANOPEN_COB_ID_RSDO 	0x600
 #define UCANOPEN_SDO_LENGTH		8
 
 /* SDO Read */
@@ -61,13 +59,16 @@
 
 /* prototypes */
 
-uCO_ErrorStatus_t
-uco_proceed_SDO_request(uCO_t *p, uint8_t *data);
+void
+uco_sdo_on_tick(uCO_t *p);
 
 uCO_ErrorStatus_t
-uco_proceed_SDO_reply(uCO_t *p, uint8_t *data);
+uco_sdo_abort(uCO_t *p, uint32_t reason);
 
 uCO_ErrorStatus_t
-uco_SDO_abort(uCO_t *p, uint8_t *request, uint32_t reason);
+uco_proceed_sdo_request(uCO_t *p, uint8_t *data);
+
+uCO_ErrorStatus_t
+uco_proceed_sdo_reply(uCO_t *p, uint8_t *data);
 
 #endif /* LIB_UCANOPEN_UCO_SDO_H_ */

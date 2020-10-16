@@ -8,6 +8,8 @@
 #ifndef LIB_UCANOPEN_UCO_PDO_H_
 #define LIB_UCANOPEN_UCO_PDO_H_
 
+#include "uco_defs.h"
+
 /** ---------------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.5.5 RPDO Communication Parameters
  * [CAN_and_CANOpen.pdf] 2.5.6 TPDO Communication Parameters
@@ -21,19 +23,19 @@
  *	 4	| Reserved				| UNSIGNED8
  *	 5	| Event Timer			| UNSIGNED16
  */
-typedef enum uCO_PDO_TransmissionType
-{
-	IMMEDIATELY = 0,
-	ON_SYNC
-} uCO_PDO_TransmissionType_t;
 
-typedef struct uCO_PDO
-{
-	uCO_CobId_t CobID;
-	uCO_PDO_TransmissionType_t TransmissionType;
-	uCO_Time_t InhibitTime;
-	uint8_t reserved;
-	uCO_Time_t EventTimer;
-} uCO_PDO_t;
+/* prototypes */
+
+void
+uco_pdo_on_tick(uCO_t *p);
+
+uCO_ErrorStatus_t
+uco_tpdo_init(uCO_TPDO_t *Tpdo, void *address, size_t size);
+
+uCO_ErrorStatus_t
+uco_tpdo_transmit(uCO_t *p, int num);
+
+uCO_ErrorStatus_t
+uco_tpdo_prepare_data(uCO_t *p, int num);
 
 #endif /* LIB_UCANOPEN_UCO_PDO_H_ */

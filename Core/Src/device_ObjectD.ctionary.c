@@ -39,7 +39,7 @@ const uCO_OD_Item_t Manufacturer_OD[] =
 };
 
 uCO_OD_Item_t*
-uco_find_OD_Manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
+uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	/** --------------
 	 *  Search in OD

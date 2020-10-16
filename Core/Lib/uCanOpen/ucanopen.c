@@ -17,15 +17,177 @@ static rBuffer_t txRingBuffer;
 /* instance */
 uCO_t uCO;
 
-/* private functions */
+/**
+ *
+ */
 static uCO_ErrorStatus_t
-priv_pop_message(rBuffer_t *buf, uCO_CanMessage_t *msg);
+pop_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
+{
+	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	size_t numBytes = 2/* CobId */+ 1/* len */;
 
-static uCO_ErrorStatus_t
-priv_push_message(rBuffer_t *buf, uCO_CanMessage_t *msg);
+	if (ring_buffer_available(buf) >= numBytes)
+	{
+		/* COB ID */
+		msg->CobId = ring_buffer_read(buf) << 8;
+		msg->CobId += ring_buffer_read(buf);
 
+		/* Data length */
+		msg->length = ring_buffer_read(buf);
+
+		/* Data */
+		ring_buffer_read_bytes(buf, msg->data, msg->length);
+
+		result = UCANOPEN_SUCCESS;
+	}
+	else
+	{
+		/* garbage in buffer */
+		numBytes = ring_buffer_available(buf);
+		for (int i = 0; i < numBytes; i++)
+		{
+			ring_buffer_read(buf);
+		}
+	}
+	return result;
+}
+
+/**
+ *
+ */
 static uCO_ErrorStatus_t
-priv_proceed_incoming(uCO_t *pCO, uCO_CanMessage_t *msg);
+push_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
+{
+	/* COB ID */
+	ring_buffer_write(buf, (msg->CobId >> 8) & 0x7F);
+	ring_buffer_write(buf, (msg->CobId) & 0xFF);
+
+	/* Data length */
+	ring_buffer_write(buf, msg->length);
+
+	/* Data */
+	ring_buffer_write_bytes(buf, msg->data, msg->length);
+
+	return UCANOPEN_SUCCESS;
+}
+
+/**
+ *
+ */
+static uCO_ErrorStatus_t
+proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
+{
+	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+
+	/* switch protocol */
+	if (__IS_UCANOPEN_COB_ID_NMT(msg->CobId))
+	{
+		result = uco_proceed_nmt_command(p, msg->data, msg->length);
+	}
+	else if (__IS_UCANOPEN_COB_ID_SYNC(msg->CobId))
+	{
+		result = uco_proceed_sync_request(p, msg->data, msg->length);
+	}
+	else if (__IS_UCANOPEN_COB_ID_EMCY(msg->CobId))
+	{
+		uCO_NodeId_t NodeId = __UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId);
+		result = uco_proceed_EMCY_message(NodeId, msg->data, msg->length);
+	}
+	/**
+	 * SDO Server -> Client
+	 */
+	else if (__IS_UCANOPEN_COB_ID_TSDO(msg->CobId))
+	{
+		/* Check address */
+		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
+			return UCANOPEN_ERROR;
+
+		/* Check message format */
+		if (msg->length != UCANOPEN_SDO_LENGTH)
+			return UCANOPEN_ERROR;
+
+		/* Check node status for SDO processing */
+		if (p->NodeState == NODE_STATE_STOPPED ||
+			p->NodeState == NODE_STATE_INITIALIZATION)
+			return UCANOPEN_ERROR;
+
+		result = uco_proceed_sdo_reply(p, msg->data);
+	}
+	/**
+	 * SDO Client -> Server
+	 */
+	else if (__IS_UCANOPEN_COB_ID_RSDO(msg->CobId))
+	{
+		/* Check address */
+		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
+			return UCANOPEN_ERROR;
+
+		/* Check message format */
+		if (msg->length != UCANOPEN_SDO_LENGTH)
+			return UCANOPEN_ERROR;
+
+		/* Check node status for SDO processing */
+		if (p->NodeState == NODE_STATE_STOPPED ||
+			p->NodeState == NODE_STATE_INITIALIZATION)
+			return UCANOPEN_ERROR;
+
+		result = uco_proceed_sdo_request(p, msg->data);
+	}
+	else if (__IS_UCANOPEN_COB_ID_TPDO(msg->CobId))
+	{
+		//TODO
+	}
+	else if (__IS_UCANOPEN_COB_ID_RPDO(msg->CobId))
+	{
+		//TODO
+	}
+	else
+	{
+		//TODO
+	}
+	return result;
+}
+
+/**
+ *
+ */
+void
+uco_run(uCO_t *p)
+{
+	uCO_CanMessage_t msg;
+
+	/* check timestamp and timeouts */
+	if (p->ticks != HAL_GetTick())
+	{
+		uCO_Time_t delta = HAL_GetTick() - p->ticks;
+		p->Timestamp += delta;
+		p->ticks += delta;
+
+		uco_nmt_on_tick(p);
+		uco_pdo_on_tick(p);
+		uco_sdo_on_tick(p);
+	}
+
+	/* check and proceed incoming messages */
+	while (ring_buffer_available(p->rxBuf))
+	{
+		/* COB ID */
+		msg.CobId = ring_buffer_read(p->rxBuf) << 8;
+		msg.CobId += ring_buffer_read(p->rxBuf);
+
+		/* Data length */
+		msg.length = ring_buffer_read(p->rxBuf);
+
+		/* Data */
+		ring_buffer_read_bytes(p->rxBuf, msg.data, msg.length);
+
+		/* proceeding */
+		proceed_incoming(p, &msg);
+	}
+
+	/* transmit queued messages */
+	while (uco_transmit_from_buffer(p) == UCANOPEN_SUCCESS);
+}
 
 /**
  *
@@ -88,6 +250,39 @@ uco_receive_to_buffer(uCO_t *p, CanRxMessage_t *msg)
  *
  */
 uCO_ErrorStatus_t
+uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg)
+{
+	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	CanTxMessage_t msg;
+	uint32_t mailbox;
+
+	if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan))
+	{
+		msg.header.RTR = CAN_RTR_DATA;
+		msg.header.IDE = CAN_ID_STD;
+		msg.header.ExtId = 0x0UL;
+
+		/* COB ID */
+		msg.header.StdId = umsg->CobId;
+
+		/* Data length */
+		msg.header.DLC = umsg->length;
+
+		/* Data */
+		memcpy(msg.data, umsg->data, umsg->length);
+
+		if (HAL_CAN_AddTxMessage(&hcan, &msg.header, msg.data, &mailbox) == HAL_OK)
+		{
+			result = UCANOPEN_SUCCESS;
+		}
+	}
+	return result;
+}
+
+/**
+ *
+ */
+uCO_ErrorStatus_t
 uco_transmit_from_buffer(uCO_t *p)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
@@ -122,60 +317,6 @@ uco_transmit_from_buffer(uCO_t *p)
 /**
  *
  */
-static uCO_ErrorStatus_t
-priv_pop_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
-{
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
-	size_t numBytes = 2/* CobId */+ 1/* len */;
-
-	if (ring_buffer_available(buf) >= numBytes)
-	{
-		/* COB ID */
-		msg->CobId = ring_buffer_read(buf) << 8;
-		msg->CobId += ring_buffer_read(buf);
-
-		/* Data length */
-		msg->length = ring_buffer_read(buf);
-
-		/* Data */
-		ring_buffer_read_bytes(buf, msg->data, msg->length);
-
-		result = UCANOPEN_SUCCESS;
-	}
-	else
-	{
-		/* garbage in buffer */
-		numBytes = ring_buffer_available(buf);
-		for (int i = 0; i < numBytes; i++)
-		{
-			ring_buffer_read(buf);
-		}
-	}
-	return result;
-}
-
-/**
- *
- */
-static uCO_ErrorStatus_t
-priv_push_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
-{
-	/* COB ID */
-	ring_buffer_write(buf, (msg->CobId >> 8) & 0x7F);
-	ring_buffer_write(buf, (msg->CobId) & 0xFF);
-
-	/* Data length */
-	ring_buffer_write(buf, msg->length);
-
-	/* Data */
-	ring_buffer_write_bytes(buf, msg->data, msg->length);
-
-	return UCANOPEN_SUCCESS;
-}
-
-/**
- *
- */
 uCO_ErrorStatus_t
 uco_send(uCO_t *p, uCO_CanMessage_t *msg)
 {
@@ -187,156 +328,14 @@ uco_send(uCO_t *p, uCO_CanMessage_t *msg)
 	/* pop oldest message from buffer, if necessary */
 	while (ring_buffer_available_for_write(p->txBuf) < numBytes)
 	{
-		priv_pop_message(p->txBuf, &tmp);
+		pop_message(p->txBuf, &tmp);
 	}
 
-	return priv_push_message(p->txBuf, msg);
-}
-
-/**
- *
- */
-void
-uco_run(uCO_t *p)
-{
-	uCO_CanMessage_t msg;
-
-	/* check timestamp and timeouts */
-	if (p->ticks < HAL_GetTick())
-	{
-		uCO_Time_t delta = HAL_GetTick() - p->ticks;
-		p->Timestamp += delta;
-		p->ticks += delta;
-
-		/* Heartbeat message */
-//		if (p->NMT.HeartbeatTime &&
-//			p->NMT.HeartbeatTimestamp + p->NMT.HeartbeatTime <= p->Timestamp)
-//		{
-//			uco_send_HEARTBEAT_message(p);
-//			p->NMT.HeartbeatTimestamp = p->Timestamp;
-//		}
-		if (p->NMT.HeartbeatTime)
-		{
-			uint16_t dt = p->Timestamp - p->NMT.HeartbeatTimestamp;
-
-			if (dt >= p->NMT.HeartbeatTime)
-			{
-				uco_send_HEARTBEAT_message(p);
-				p->NMT.HeartbeatTimestamp = p->Timestamp;
-			}
-		}
-
-		/* SDO process timeout */
-		if (p->SDO.Timeout &&
-			p->SDO.Timestamp + p->SDO.Timeout <= p->Timestamp)
-		{
-//			uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_TIMED_OUT);
-			p->SDO.Timestamp = p->Timestamp;
-			p->SDO.Timeout = 0;
-		}
-
-	}
-
-	/* check and proceed incoming messages */
-	while (ring_buffer_available(p->rxBuf))
-	{
-		/* COB ID */
-		msg.CobId = ring_buffer_read(p->rxBuf) << 8;
-		msg.CobId += ring_buffer_read(p->rxBuf);
-
-		/* Data length */
-		msg.length = ring_buffer_read(p->rxBuf);
-
-		/* Data */
-		ring_buffer_read_bytes(p->rxBuf, msg.data, msg.length);
-
-		/* proceeding */
-		priv_proceed_incoming(p, &msg);
-	}
-
-	/* transmit queued messages */
-	while (uco_transmit_from_buffer(p) == UCANOPEN_SUCCESS);
-}
-
-/**
- *
- */
-static uCO_ErrorStatus_t
-priv_proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
-{
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
-
-	/* switch protocol */
-	if (__IS_UCANOPEN_COB_ID_NMT(msg->CobId))
-	{
-		result = uco_proceed_NMT_command(p, msg->data, msg->length);
-	}
-	else if (__IS_UCANOPEN_COB_ID_SYNC(msg->CobId))
-	{
-		result = uco_proceed_SYNC_request(p, msg->data, msg->length);
-	}
-	else if (__IS_UCANOPEN_COB_ID_EMCY(msg->CobId))
-	{
-		uCO_NodeId_t NodeId = __UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId);
-		result = uco_proceed_EMCY_message(NodeId, msg->data, msg->length);
-	}
-	/**
-	 * SDO Server -> Client
-	 */
-	else if (__IS_UCANOPEN_COB_ID_TSDO(msg->CobId))
-	{
-		/* Check address */
-		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
-			return UCANOPEN_ERROR;
-
-		/* Check message format */
-		if (msg->length != UCANOPEN_SDO_LENGTH)
-			return UCANOPEN_ERROR;
-
-		/* Check node status for SDO processing */
-		if (p->NodeState == NODE_STATE_STOPPED ||
-			p->NodeState == NODE_STATE_INITIALIZATION)
-			return UCANOPEN_ERROR;
-
-		result = uco_proceed_SDO_reply(p, msg->data);
-	}
-	/**
-	 * SDO Client -> Server
-	 */
-	else if (__IS_UCANOPEN_COB_ID_RSDO(msg->CobId))
-	{
-		/* Check address */
-		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
-			return UCANOPEN_ERROR;
-
-		/* Check message format */
-		if (msg->length != UCANOPEN_SDO_LENGTH)
-			return UCANOPEN_ERROR;
-
-		/* Check node status for SDO processing */
-		if (p->NodeState == NODE_STATE_STOPPED ||
-			p->NodeState == NODE_STATE_INITIALIZATION)
-			return UCANOPEN_ERROR;
-
-		result = uco_proceed_SDO_request(p, msg->data);
-	}
-	else if (__IS_UCANOPEN_COB_ID_TPDO(msg->CobId))
-	{
-		//TODO
-	}
-	else if (__IS_UCANOPEN_COB_ID_RPDO(msg->CobId))
-	{
-		//TODO
-	}
-	else
-	{
-		//TODO
-	}
-	return result;
+	return push_message(p->txBuf, msg);
 }
 
 uCO_OD_Item_t*
-uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub)
+uco_find_od_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	/** ---------------------------------------------------------
 	 * [CAN_and_CANOpen.pdf] 2.2.6 Manufacturer Specific Entries
@@ -350,7 +349,7 @@ uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub)
 	if (id >= UCANOPEN_OD_MANUFACTURER_REGISTER_FIRST &&
 		id <= UCANOPEN_OD_MANUFACTURER_REGISTER_LAST)
 	{
-		return uco_find_OD_Manufacturer_item(p, id, sub);
+		return uco_find_od_manufacturer_item(p, id, sub);
 	}
 
 	/** ---------------------------------------------------------
@@ -365,7 +364,7 @@ uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub)
 	if (id >= UCANOPEN_OD_RPDO_REGISTER_FIRST &&
 		id <= UCANOPEN_OD_RPDO_REGISTER_LAST)
 	{
-		return uco_find_OD_RPDO_item(p, id, sub);
+		return uco_find_od_rpdo_item(p, id, sub);
 	}
 
 	/** ---------------------------------------------------------
@@ -379,7 +378,7 @@ uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub)
 	if (id >= UCANOPEN_OD_TPDO_REGISTER_FIRST &&
 		id <= UCANOPEN_OD_TPDO_REGISTER_LAST)
 	{
-		return uco_find_OD_TPDO_item(p, id, sub);
+		return uco_find_od_tpdo_item(p, id, sub);
 	}
 
 	/** --------------
@@ -413,19 +412,19 @@ uco_find_OD_item(uCO_t *p, uint16_t id, uint8_t sub)
 }
 
 __weak uCO_OD_Item_t*
-uco_find_OD_RPDO_item(uCO_t *p, uint16_t id, uint8_t sub)
+uco_find_od_rpdo_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	return NULL;
 }
 
 __weak uCO_OD_Item_t*
-uco_find_OD_TPDO_item(uCO_t *p, uint16_t id, uint8_t sub)
+uco_find_od_tpdo_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	return NULL;
 }
 
 __weak uCO_OD_Item_t*
-uco_find_OD_Manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
+uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	return NULL;
 }

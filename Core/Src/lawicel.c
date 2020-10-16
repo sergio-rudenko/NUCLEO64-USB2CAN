@@ -13,6 +13,9 @@
 #include "usart.h"
 #include "can.h"
 
+#include "signal.h"
+extern Signal_t *pUserLed;
+
 /* variables */
 volatile uint16_t lawicelTimer;
 static bool useTimeStamp;
@@ -224,7 +227,7 @@ lawicel_proceed(rBuffer_t *rx, rBuffer_t *tx)
 				case LAWICEL_CLOSE_CAN:
 					if (UART2CAN_CAN_Stop(&hcan))
 					{
-						HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+						signal_level(pUserLed, RESET);
 						reply_data[0] = LAWICEL_RESPONCE_OK;
 						reply_size = 1;
 					}
@@ -238,7 +241,7 @@ lawicel_proceed(rBuffer_t *rx, rBuffer_t *tx)
 				case LAWICEL_OPEN_CAN:
 					if (UART2CAN_CAN_Start(&hcan))
 					{
-						HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+						signal_level(pUserLed, SET);
 						reply_data[0] = LAWICEL_RESPONCE_OK;
 						reply_size = 1;
 					}
