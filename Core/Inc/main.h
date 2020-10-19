@@ -1,22 +1,22 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.h
+ * @brief          : Header for main.c file.
+ *                   This file contains the common defines of the application.
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under BSD 3-Clause license,
+ * the "License"; You may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at:
+ *                        opensource.org/licenses/BSD-3-Clause
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -66,7 +66,8 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
+void
+Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -86,6 +87,30 @@ void Error_Handler(void);
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
+
+typedef enum SPRUT_KeyType
+{
+	SECURITY_KEY = 0,
+	ACCESS_KEY = 1,
+
+	MASTER_KEY = 0xFE,
+
+} SPRUT_KeyType_t;
+
+#pragma pack(push,1)
+typedef struct SPRUT_Key
+{
+	uint8_t type;
+	uint8_t bits;
+	uint8_t schedule;
+	uint8_t reserved;
+
+	uint64_t key;
+} SPRUT_Key_t;
+#pragma pack(pop)
+
+extern SPRUT_Key_t Keys[1024];
+
 extern char deviceSoftwareVersion[32];
 /* USER CODE END Private defines */
 

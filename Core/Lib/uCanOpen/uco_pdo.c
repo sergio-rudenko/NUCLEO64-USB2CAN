@@ -46,11 +46,6 @@ uco_tpdo_transmit(uCO_t *p, int num)
 		return UCANOPEN_ERROR;
 	}
 
-	if (num < 0 || num > 4)
-	{
-		return UCANOPEN_ERROR;
-	}
-
 	if (uco_tpdo_prepare_data(p, num) == UCANOPEN_SUCCESS)
 	{
 		switch (num)
@@ -71,6 +66,9 @@ uco_tpdo_transmit(uCO_t *p, int num)
 				message.CobId = UCANOPEN_COB_ID_TPDO_4;
 				tpdo = &p->TPDO[3];
 				break;
+
+			default:
+				return UCANOPEN_ERROR;
 		}
 
 		if (tpdo->data.address && tpdo->data.size <= 8)

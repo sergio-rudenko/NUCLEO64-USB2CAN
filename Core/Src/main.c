@@ -66,6 +66,8 @@ uint8_t deviceTestArray256bytes[256];
 
 bool uplinkStatus;
 
+SPRUT_Key_t Keys[1024];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -146,6 +148,9 @@ main(void)
 
 	//uco_tpdo_init(&uCO.TPDO[2], 2000, 0, 0);
 	//uCO.TPDO[2].sendOnSync = true;
+
+	Keys[0].type = MASTER_KEY;
+	Keys[1].type = ACCESS_KEY;
 
 	/* USER CODE END 2 */
 
@@ -291,7 +296,6 @@ uco_tpdo_prepare_data(uCO_t *p, int num)
 
 	return result;
 }
-
 
 void
 uco_nmt_on_uplink_status(uCO_t *p, bool alive)
