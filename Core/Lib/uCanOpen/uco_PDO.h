@@ -28,7 +28,13 @@ uco_pdo_on_tick(uCO_t *p);
 uCO_ErrorStatus_t
 uco_tpdo_transmit(uCO_t *p, int num);
 
+/* callback`s */
+
 uCO_ErrorStatus_t
 uco_tpdo_prepare_data(uCO_t *p, int num);
+
+void
+uco_tpdo_on_send(uCO_t *p, int num);
+
 
 #endif /* LIB_UCANOPEN_UCO_PDO_H_ */

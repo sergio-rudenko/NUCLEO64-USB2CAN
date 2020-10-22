@@ -12,7 +12,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include  "gpio.h"
+//#include  "gpio.h"
+#include "stm32f0xx_ll_gpio.h"
+
 
 #define SIGNAL_INFINITE         0xFFFF
 #define SIGNAL_PATTERN_MEANDR   0b01010101010101010101010101010101

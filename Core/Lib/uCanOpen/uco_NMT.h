@@ -11,6 +11,8 @@
 #include "uco_defs.h"
 
 #define UCANOPEN_COB_ID_NMT 							0x000
+#define UCANOPEN_COB_ID_HEARTBEAT						0x700
+#define UCANOPEN_COB_ID_NODE_GUARDING					0x700
 #define UCANOPEN_NMT_MESSAGE_LENGTH						1
 
 #define UCANOPEN_HEARTBEAT_MESSAGE_LENGTH				0x01
@@ -32,6 +34,8 @@ uco_send_heartbeat_message(uCO_t *p);
 
 uCO_ErrorStatus_t
 uco_proceed_nmt_command(uCO_t *p, uint8_t *data);
+
+/* callback`s */
 
 void
 uco_nmt_on_uplink_status(uCO_t *p, bool alive);

@@ -26,8 +26,7 @@
 
 #include "lawicel.h"
 
-#include "button.h"
-#include "signal.h"
+#include "device.h"
 
 /* USER CODE END Includes */
 
@@ -58,9 +57,6 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-extern Button_t *pUserButton;
-extern Signal_t *pUserLed;
 
 /* USER CODE END 0 */
 

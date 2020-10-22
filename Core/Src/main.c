@@ -51,22 +51,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-char deviceSoftwareVersion[32] = "v0.05_DEV";
-
-static Button_t UserButton;
-Button_t *pUserButton = &UserButton;
-
-static Signal_t UserLed;
-Signal_t *pUserLed = &UserLed;
-
-// Manufacturer OD
-const uint16_t deviceTest16bitRO = 123;
-uint8_t deviceTestArray12bytes[12];
-uint8_t deviceTestArray256bytes[256];
-
-bool uplinkStatus;
-
-SPRUT_Key_t Keys[1024];
 
 /* USER CODE END PV */
 
@@ -136,21 +120,11 @@ main(void)
 	uCO.NodeId = 100;
 	uCO.NodeState = NODE_STATE_OPERATIONAL;
 
-	for (int i = 0; i < sizeof(deviceTestArray12bytes); i++)
-	{
-		deviceTestArray12bytes[i] = i * 2;
-	}
-
-	for (int i = 0; i < sizeof(deviceTestArray256bytes); i++)
-	{
-		deviceTestArray256bytes[i] = i;
-	}
-
 	//uco_tpdo_init(&uCO.TPDO[2], 2000, 0, 0);
 	//uCO.TPDO[2].sendOnSync = true;
 
-	Keys[0].type = MASTER_KEY;
-	Keys[1].type = ACCESS_KEY;
+	device_load_keys(deviceKeys, DEVICE_KEYS_NUMBER);
+	device_load_scedules(deviceSchedules, DEVICE_SCHEDULES_NUMBER);
 
 	/* USER CODE END 2 */
 
@@ -226,11 +200,19 @@ SystemClock_Config(void)
 void
 button_released_callback(Button_t *p)
 {
+	static uint16_t keyIndex = 0; //FIXME!
+
 	if (p->PrevState == ButtonState_Pressed)
 	{
 		signal_blink(pUserLed, 100, 2,
 						signal_get_output(pUserLed) ?
 							SIGNAL_INVERTED : SIGNAL_NORMAL);
+
+		/* switch to next key */
+		keyIndex = (keyIndex + 1 < deviceKeysCount) ?
+			keyIndex + 1 : 1;
+
+		memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * keyIndex], sizeof(AccessKey_t));
 
 		uco_tpdo_transmit(&uCO, 1);
 		uco_tpdo_transmit(&uCO, 2);
@@ -243,64 +225,11 @@ button_pressed_long_callback(Button_t *p)
 	signal_blink(pUserLed, 150, 3,
 					signal_get_output(pUserLed) ?
 						SIGNAL_INVERTED : SIGNAL_NORMAL);
-}
 
-uCO_ErrorStatus_t
-uco_tpdo_prepare_data(uCO_t *p, int num)
-{
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * MASTER_KEY_INDEX], sizeof(AccessKey_t));
 
-	static uint8_t tpdoData1[8];
-	static uint8_t tpdoData2[8];
-	static uint8_t tpdoData3[4];
-
-	uint32_t unixtime = now();
-
-	if (num == 1)
-	{
-		tpdoData1[0] = (unixtime) & 0xFF;
-		tpdoData1[1] = (unixtime >> 8) & 0xFF;
-		tpdoData1[2] = (unixtime >> 16) & 0xFF;
-		tpdoData1[3] = (unixtime >> 24) & 0xFF;
-
-		memcpy(&tpdoData1[4], deviceTestArray12bytes, 4);
-
-		p->TPDO[0].data.address = tpdoData1;
-		p->TPDO[0].data.size = sizeof(tpdoData1);
-
-		result = UCANOPEN_SUCCESS;
-	}
-
-	if (num == 2)
-	{
-		memcpy(tpdoData2, &deviceTestArray12bytes[4], 8);
-
-		p->TPDO[1].data.address = tpdoData2;
-		p->TPDO[1].data.size = sizeof(tpdoData2);
-
-		result = UCANOPEN_SUCCESS;
-	}
-
-	if (num == 3)
-	{
-		tpdoData3[0] = (unixtime) & 0xFF;
-		tpdoData3[1] = (unixtime >> 8) & 0xFF;
-		tpdoData3[2] = (unixtime >> 16) & 0xFF;
-		tpdoData3[3] = (unixtime >> 24) & 0xFF;
-
-		p->TPDO[2].data.address = tpdoData3;
-		p->TPDO[2].data.size = sizeof(tpdoData3);
-
-		result = UCANOPEN_SUCCESS;
-	}
-
-	return result;
-}
-
-void
-uco_nmt_on_uplink_status(uCO_t *p, bool alive)
-{
-	uplinkStatus = alive;
+	uco_tpdo_transmit(&uCO, 1);
+	uco_tpdo_transmit(&uCO, 2);
 }
 
 /* USER CODE END 4 */

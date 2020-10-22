@@ -44,9 +44,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "button.h"
-#include "signal.h"
-#include "unixtime.h"
+#include "device.h"
 
 /* USER CODE END Includes */
 
@@ -88,30 +86,6 @@ Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
-typedef enum SPRUT_KeyType
-{
-	SECURITY_KEY = 0,
-	ACCESS_KEY = 1,
-
-	MASTER_KEY = 0xFE,
-
-} SPRUT_KeyType_t;
-
-#pragma pack(push,1)
-typedef struct SPRUT_Key
-{
-	uint8_t type;
-	uint8_t bits;
-	uint8_t schedule;
-	uint8_t reserved;
-
-	uint64_t key;
-} SPRUT_Key_t;
-#pragma pack(pop)
-
-extern SPRUT_Key_t Keys[1024];
-
-extern char deviceSoftwareVersion[32];
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

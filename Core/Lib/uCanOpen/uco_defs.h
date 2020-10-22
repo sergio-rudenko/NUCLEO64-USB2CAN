@@ -51,9 +51,7 @@
  * 				Guarding) 					700h + Node ID
  */
 #define UCANOPEN_COB_ID_MASK 				0x780
-
-#define UCANOPEN_COB_ID_HEARTBEAT			0x700
-#define UCANOPEN_COB_ID_NODE_GUARDING		0x700
+#define UCANOPEN_NODE_ID_MASK 				0x07F
 
 #define __IS_UCANOPEN_COB_ID_NMT(COB_ID)	(COB_ID == UCANOPEN_COB_ID_NMT)
 
@@ -142,6 +140,7 @@ typedef enum uCO_OD_ItemType
 typedef enum uCO_OD_ItemAccess
 {
 	READ_ONLY = 0,
+	WRITE_ONLY,
 	READ_WRITE,
 } uCO_OD_ItemAccess_t;
 

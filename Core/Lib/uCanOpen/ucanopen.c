@@ -337,6 +337,13 @@ uco_transmit_from_buffer(uCO_t *p)
 		msg.header.StdId = ring_buffer_read(p->txBuf) << 8;
 		msg.header.StdId += ring_buffer_read(p->txBuf);
 
+		/* Adjust NodeId, if it is differs */
+		if ((msg.header.StdId & UCANOPEN_NODE_ID_MASK) != p->NodeId)
+		{
+			msg.header.StdId &= ~(UCANOPEN_NODE_ID_MASK);
+			msg.header.StdId |= p->NodeId;
+		}
+
 		/* Data length */
 		msg.header.DLC = ring_buffer_read(p->txBuf);
 
@@ -430,7 +437,7 @@ uco_find_od_item(uCO_t *p, uint16_t id, uint8_t sub)
 			{
 				uCO_OD_Item_t *item = p->OD[i].address;
 				uint8_t sub_count = *((uint8_t*) item[0].address);
-				for (int j = 1; j < sub_count; j++)
+				for (int j = 0; j < sub_count + 1; j++)
 				{
 					if (item[j].index == sub)
 					{

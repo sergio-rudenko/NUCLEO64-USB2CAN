@@ -42,6 +42,13 @@ sdo_expedited_read_reply(uCO_t *p)
 	uCO_CanMessage_t reply = { 0 };
 	uint32_t value;
 
+	/* data prepare */
+	if (uco_sdo_prepare_data(p, p->SDO.index, p->SDO.sub) != UCANOPEN_SUCCESS)
+	{
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_GENERAL_ERROR);
+		return UCANOPEN_ERROR;
+	}
+
 	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
 	reply.length = UCANOPEN_SDO_LENGTH;
 
@@ -83,7 +90,13 @@ sdo_expedited_read_reply(uCO_t *p)
 		default:
 			return UCANOPEN_ERROR;
 	}
-	return uco_send(p, &reply);
+
+	if (uco_send(p, &reply) == UCANOPEN_SUCCESS)
+	{
+		uco_sdo_on_read_success(p, p->SDO.index, p->SDO.sub);
+		return UCANOPEN_SUCCESS;
+	}
+	return UCANOPEN_ERROR;
 }
 
 /**
@@ -108,31 +121,65 @@ sdo_expedited_write_reply(uCO_t *p, uint8_t clientCommand, uint8_t *clientData)
 	switch (clientCommand)
 	{
 		case UCANOPEN_SDO_EXPEDITED_WRITE_1BYTE_REQUEST:
-			value = clientData[0];
-
-			*((uint8_t*) p->SDO.Item->address) = value;
+			if (p->SDO.Item->Type == UNSIGNED8)
+			{
+				value = clientData[0];
+				*((uint8_t*) p->SDO.Item->address) = value;
+			}
+			else
+			{
+				uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+				return UCANOPEN_ERROR;
+			}
 			break;
 
 		case UCANOPEN_SDO_EXPEDITED_WRITE_2BYTES_REQUEST:
-			value = clientData[0];
-			value += clientData[1] << 8;
-
-			*((uint16_t*) p->SDO.Item->address) = value;
+			if (p->SDO.Item->Type == UNSIGNED16)
+			{
+				value = clientData[0];
+				value += clientData[1] << 8;
+				*((uint16_t*) p->SDO.Item->address) = value;
+			}
+			else
+			{
+				uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+				return UCANOPEN_ERROR;
+			}
 			break;
 
 		case UCANOPEN_SDO_EXPEDITED_WRITE_4BYTES_REQUEST:
-			value = clientData[0];
-			value += clientData[1] << 8;
-			value += clientData[2] << 16;
-			value += clientData[3] << 24;
-
-			*((uint32_t*) p->SDO.Item->address) = value;
+			if (p->SDO.Item->Type == UNSIGNED32)
+			{
+				value = clientData[0];
+				value += clientData[1] << 8;
+				value += clientData[2] << 16;
+				value += clientData[3] << 24;
+				*((uint32_t*) p->SDO.Item->address) = value;
+			}
+			else
+			{
+				uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_OUT_OF_MEMORY);
+				return UCANOPEN_ERROR;
+			}
 			break;
 
 		default:
 			return UCANOPEN_ERROR;
 	}
-	return uco_send(p, &reply);
+
+	/* validate check */
+	if (uco_sdo_validate_data(p, p->SDO.index, p->SDO.sub) != UCANOPEN_SUCCESS)
+	{
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_GENERAL_ERROR);
+		return UCANOPEN_ERROR;
+	}
+
+	if (uco_send(p, &reply) == UCANOPEN_SUCCESS)
+	{
+		uco_sdo_on_write_success(p, p->SDO.index, p->SDO.sub);
+		return UCANOPEN_SUCCESS;
+	}
+	return UCANOPEN_ERROR;
 }
 
 /**
@@ -142,6 +189,13 @@ static uCO_ErrorStatus_t
 sdo_segmented_read_handshake(uCO_t *p)
 {
 	uCO_CanMessage_t reply = { 0 };
+
+	/* data prepare */
+	if (uco_sdo_prepare_data(p, p->SDO.index, p->SDO.sub) != UCANOPEN_SUCCESS)
+	{
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_GENERAL_ERROR);
+		return UCANOPEN_ERROR;
+	}
 
 	reply.CobId = UCANOPEN_COB_ID_TSDO | p->NodeId;
 	reply.length = UCANOPEN_SDO_LENGTH;
@@ -153,11 +207,15 @@ sdo_segmented_read_handshake(uCO_t *p)
 			break;
 
 		case OCTET_STRING:
-			p->SDO.segmented.size = p->SDO.Item->size;
+			p->SDO.segmented.size = uco_sdo_get_octet_string_size(p, p->SDO.index, p->SDO.sub);
+			if (p->SDO.segmented.size == 0)
+				p->SDO.segmented.size = p->SDO.Item->size;
 			break;
 
 		case VISIBLE_STRING:
-			p->SDO.segmented.size = strlen((char*) p->SDO.Item->address);
+			p->SDO.segmented.size = uco_sdo_get_visible_string_length(p, p->SDO.index, p->SDO.sub);
+			if (p->SDO.segmented.size == 0)
+				p->SDO.segmented.size = strlen((char*) p->SDO.Item->address);
 			break;
 
 		default:
@@ -252,17 +310,22 @@ sdo_segmented_read_process(uCO_t *p, uint8_t clientCommand)
 	/* Server CS */
 	reply.data[0] = (toggleBit << 4) | (freeBytes << 1) | lastSegment;
 
-	if (lastSegment)
+	if (uco_send(p, &reply) == UCANOPEN_SUCCESS)
 	{
-		sdo_reset_server_process(p);
+		if (lastSegment)
+		{
+			uco_sdo_on_read_success(p, p->SDO.index, p->SDO.sub);
+			sdo_reset_server_process(p);
+		}
+		else
+		{
+			/* update timeout and timestamp */
+			p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+			p->SDO.Timestamp = p->Timestamp;
+		}
+		return UCANOPEN_SUCCESS;
 	}
-	else
-	{
-		/* update timeout and timestamp */
-		p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
-		p->SDO.Timestamp = p->Timestamp;
-	}
-	return uco_send(p, &reply);
+	return UCANOPEN_ERROR;
 }
 
 /**
@@ -375,7 +438,17 @@ sdo_segmented_write_process(uCO_t *p, uint8_t clientCommand, uint8_t *clientData
 
 	if (lastSegment)
 	{
-		sdo_reset_server_process(p);
+		/* validate check */
+		if (uco_sdo_validate_data(p, p->SDO.index, p->SDO.sub) != UCANOPEN_SUCCESS)
+		{
+			uco_sdo_abort(p, UCANOPEN_SDO_ABORT_GENERAL_ERROR);
+			return UCANOPEN_ERROR;
+		}
+		else
+		{
+			uco_sdo_on_write_success(p, p->SDO.index, p->SDO.sub);
+			sdo_reset_server_process(p);
+		}
 	}
 	else
 	{
@@ -432,8 +505,10 @@ uco_sdo_abort(uCO_t *p, uint32_t reason)
 	reply.data[6] = (reason >> 16) & 0xFF;
 	reply.data[7] = (reason >> 24) & 0xFF;
 
-	sdo_reset_server_process(p);
+	/* abort callback */
+	uco_sdo_on_abort(p, p->SDO.index, p->SDO.sub, reason);
 
+	sdo_reset_server_process(p);
 	return uco_send(p, &reply);
 }
 
@@ -478,7 +553,7 @@ uco_proceed_sdo_request(uCO_t *p, uint8_t *request)
 
 	if (!p->SDO.Item)
 	{
-		uco_sdo_abort(p,UCANOPEN_SDO_ABORT_REASON_NOT_EXISTS);
+		uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_NOT_EXISTS);
 		return UCANOPEN_ERROR;
 	}
 
@@ -496,6 +571,12 @@ uco_proceed_sdo_request(uCO_t *p, uint8_t *request)
 	/* (Expedited|Segmented) READ OD item request */
 	if (request[0] == UCANOPEN_SDO_READ_REQUEST)
 	{
+		if (p->SDO.Item->Access == WRITE_ONLY)
+		{
+			uco_sdo_abort(p, UCANOPEN_SDO_ABORT_REASON_WRITEONLY);
+			result = UCANOPEN_ERROR;
+		}
+
 		if (p->SDO.Item->Type == UNSIGNED64 ||
 			p->SDO.Item->Type == OCTET_STRING ||
 			p->SDO.Item->Type == VISIBLE_STRING)
@@ -513,7 +594,7 @@ uco_proceed_sdo_request(uCO_t *p, uint8_t *request)
 		request[0] == UCANOPEN_SDO_EXPEDITED_WRITE_2BYTES_REQUEST ||
 		request[0] == UCANOPEN_SDO_EXPEDITED_WRITE_4BYTES_REQUEST)
 	{
-		if (p->SDO.Item->Access == READ_WRITE)
+		if (p->SDO.Item->Access != READ_ONLY)
 		{
 			result = sdo_expedited_write_reply(p, clientCommand, &request[4]);
 		}
@@ -527,7 +608,7 @@ uco_proceed_sdo_request(uCO_t *p, uint8_t *request)
 	else
 	if (request[0] == UCANOPEN_SDO_SEGMENTED_WRITE_REQUEST)
 	{
-		if (p->SDO.Item->Access == READ_WRITE)
+		if (p->SDO.Item->Access != READ_ONLY)
 		{
 			/* requested size */
 			p->SDO.segmented.size = request[4];
@@ -561,4 +642,74 @@ uco_proceed_sdo_reply(uCO_t *p, uint8_t *data)
 //TODO
 
 	return result;
+}
+
+/* callback`s */
+
+__weak size_t
+uco_sdo_get_octet_string_size(uCO_t *p, uint16_t index, uint8_t sub)
+{
+	size_t size = 0;
+	uCO_OD_Item_t *item = uco_find_od_item(p, index, sub);
+
+	if (item && item->Type == OCTET_STRING)
+	{
+		size = item->size;
+	}
+	return size;
+}
+
+__weak size_t
+uco_sdo_get_visible_string_length(uCO_t *p, uint16_t index, uint8_t sub)
+{
+	size_t length = 0;
+	uCO_OD_Item_t *item = uco_find_od_item(p, index, sub);
+
+	if (item && item->Type == VISIBLE_STRING)
+	{
+		length = strlen((char*) item->address);
+	}
+	return length;
+}
+
+/**
+ *
+ */
+__weak uCO_ErrorStatus_t
+uco_sdo_prepare_data(uCO_t *p, uint16_t index, uint8_t sub)
+{
+	return UCANOPEN_SUCCESS;
+}
+
+/**
+ *
+ */
+__weak uCO_ErrorStatus_t
+uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub)
+{
+	return UCANOPEN_SUCCESS;
+}
+
+/**
+ *
+ */
+__weak void
+uco_sdo_on_write_success(uCO_t *p, uint16_t index, uint8_t sub)
+{
+}
+
+/**
+ *
+ */
+__weak void
+uco_sdo_on_read_success(uCO_t *p, uint16_t index, uint8_t sub)
+{
+}
+
+/**
+ *
+ */
+__weak void
+uco_sdo_on_abort(uCO_t *p, uint16_t index, uint8_t sub, uint32_t reason)
+{
 }
