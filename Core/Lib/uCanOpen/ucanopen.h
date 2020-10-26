@@ -26,7 +26,7 @@ void
 uco_init(uCO_t *p, const uCO_OD_Item_t *pOD);
 
 void
-uco_receive_to_buffer(uCO_t *p, CanRxMessage_t *msg);
+uco_receive_to_buffer(uCO_t *p, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData);
 
 uCO_ErrorStatus_t
 uco_transmit_from_buffer(uCO_t *p);

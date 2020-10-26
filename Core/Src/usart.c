@@ -22,14 +22,7 @@
 
 /* USER CODE BEGIN 0 */
 
-uint8_t uartRxData[UART_RX_BUFFER_SIZE];
-uint8_t uartTxData[UART_TX_BUFFER_SIZE];
-
-rBuffer_t uartRxBuf;
-rBuffer_t *pUartRxBuf = &uartRxBuf;
-
-rBuffer_t uartTxBuf;
-rBuffer_t *pUartTxBuf = &uartTxBuf;
+#include "lawicel.h"
 
 /* USER CODE END 0 */
 
@@ -86,10 +79,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     HAL_NVIC_EnableIRQ(USART2_IRQn);
   /* USER CODE BEGIN USART2_MspInit 1 */
 
-		/* Initialize ring buffers */
-		ring_buffer_init(pUartRxBuf, uartRxData, sizeof(uartRxData));
-		ring_buffer_init(pUartTxBuf, uartTxData, sizeof(uartTxData));
-
   /* USER CODE END USART2_MspInit 1 */
   }
 }
@@ -121,37 +110,12 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
 /* USER CODE BEGIN 1 */
 
-void UART2CAN_UART_Receive(UART_HandleTypeDef *handle, rBuffer_t *rb) {
-	uint8_t *p = ring_buffer_get_write_ptr(rb);
-
-	HAL_UART_Receive_IT(handle, p, 1);
-}
-
-void UART2CAN_UART_Transmit(UART_HandleTypeDef *handle, rBuffer_t *rb) {
-	uint8_t *p = ring_buffer_get_read_ptr(rb);
-	size_t len = ring_buffer_get_read_linear_size(rb);
-
-	HAL_UART_Transmit_IT(handle, p, len);
-	ring_buffer_move_read_index(rb, len);
-}
-
-bool UART2CAN_UART_Is_Tx_Busy(UART_HandleTypeDef *handle) {
-	return (handle->gState == HAL_UART_STATE_BUSY_TX_RX
-			|| handle->gState == HAL_UART_STATE_BUSY_TX);
-}
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *handle) {
-	if (*ring_buffer_get_write_ptr(pUartRxBuf) != '\n') {
-		ring_buffer_move_write_index(pUartRxBuf, 1);
-	}
-
-	UART2CAN_UART_Receive(handle, pUartRxBuf);
+	LAWICEL_UPLINK_on_receive(pLawicelInstance, 0, 0);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *handle) {
-	if (ring_buffer_available(pUartTxBuf)) {
-		UART2CAN_UART_Transmit(handle, pUartTxBuf);
-	}
+	LAWICEL_UPLINK_transmit(pLawicelInstance);
 }
 
 /* USER CODE END 1 */

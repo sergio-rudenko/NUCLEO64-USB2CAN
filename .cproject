@@ -54,6 +54,7 @@
 									<listOptionValue builtIn="false" value="../Core/Lib/uCanOpen"/>
 									<listOptionValue builtIn="false" value="../Core/Lib/interface"/>
 									<listOptionValue builtIn="false" value="../Core/Lib/unixtime"/>
+									<listOptionValue builtIn="false" value="../Core/Lib/Lawicel"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.133015317" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -141,6 +142,7 @@
 									<listOptionValue builtIn="false" value="../Core/Lib/uCanOpen"/>
 									<listOptionValue builtIn="false" value="../Core/Lib/interface"/>
 									<listOptionValue builtIn="false" value="../Core/Lib/unixtime"/>
+									<listOptionValue builtIn="false" value="../Core/Lib/Lawicel"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.854056732" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

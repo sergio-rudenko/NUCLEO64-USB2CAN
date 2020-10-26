@@ -260,26 +260,26 @@ uco_init(uCO_t *p, const uCO_OD_Item_t pOD[])
  *
  */
 void
-uco_receive_to_buffer(uCO_t *p, CanRxMessage_t *msg)
+uco_receive_to_buffer(uCO_t *p, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData)
 {
 	size_t numBytes;
 
 	/* No RTR, No ExtId are allowed */
-	if (msg->header.RTR || msg->header.ExtId) return;
+	if (pHeader->RTR || pHeader->IDE == CAN_ID_EXT) return;
 
-	numBytes = 2/* CobId */+ 1/* len */+ msg->header.DLC;
+	numBytes = 2/* CobId */+ 1/* len */+ pHeader->DLC;
 
 	if (ring_buffer_available_for_write(p->rxBuf) >= numBytes)
 	{
 		/* COB ID */
-		ring_buffer_write(p->rxBuf, (msg->header.StdId >> 8) & 0x7F);
-		ring_buffer_write(p->rxBuf, msg->header.StdId & 0xFF);
+		ring_buffer_write(p->rxBuf, (pHeader->StdId >> 8) & 0x7F);
+		ring_buffer_write(p->rxBuf, (pHeader->StdId) & 0xFF);
 
 		/* Data length */
-		ring_buffer_write(p->rxBuf, msg->header.DLC);
+		ring_buffer_write(p->rxBuf, pHeader->DLC);
 
 		/* Data */
-		ring_buffer_write_bytes(p->rxBuf, msg->data, msg->header.DLC);
+		ring_buffer_write_bytes(p->rxBuf, pData, pHeader->DLC);
 	}
 }
 
@@ -290,25 +290,25 @@ uCO_ErrorStatus_t
 uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
-	CanTxMessage_t msg;
-	uint32_t mailbox;
+	CAN_TxHeaderTypeDef Header = { 0 };
+	uint8_t data[8];
+	uint32_t mbox;
 
 	if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan))
 	{
-		msg.header.RTR = CAN_RTR_DATA;
-		msg.header.IDE = CAN_ID_STD;
-		msg.header.ExtId = 0x0UL;
+		Header.RTR = CAN_RTR_DATA;
+		Header.IDE = CAN_ID_STD;
 
 		/* COB ID */
-		msg.header.StdId = umsg->CobId;
+		Header.StdId = umsg->CobId;
 
 		/* Data length */
-		msg.header.DLC = umsg->length;
+		Header.DLC = umsg->length;
 
 		/* Data */
-		memcpy(msg.data, umsg->data, umsg->length);
+		memcpy(data, umsg->data, umsg->length);
 
-		if (HAL_CAN_AddTxMessage(&hcan, &msg.header, msg.data, &mailbox) == HAL_OK)
+		if (HAL_CAN_AddTxMessage(&hcan, &Header, data, &mbox) == HAL_OK)
 		{
 			result = UCANOPEN_SUCCESS;
 		}
@@ -323,34 +323,35 @@ uCO_ErrorStatus_t
 uco_transmit_from_buffer(uCO_t *p)
 {
 	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
-	CanTxMessage_t msg;
-	uint32_t mailbox;
+	CAN_TxHeaderTypeDef Header = { 0 };
+	uint8_t data[8];
+	uint32_t mbox;
 
 	if (ring_buffer_available(p->txBuf) &&
 		HAL_CAN_GetTxMailboxesFreeLevel(&hcan))
 	{
-		msg.header.RTR = CAN_RTR_DATA;
-		msg.header.IDE = CAN_ID_STD;
-		msg.header.ExtId = 0x0UL;
+		Header.RTR = CAN_RTR_DATA;
+		Header.IDE = CAN_ID_STD;
 
 		/* COB ID */
-		msg.header.StdId = ring_buffer_read(p->txBuf) << 8;
-		msg.header.StdId += ring_buffer_read(p->txBuf);
+		Header.StdId = ring_buffer_read(p->txBuf) << 8;
+		Header.StdId += ring_buffer_read(p->txBuf);
 
-		/* Adjust NodeId, if it is differs */
-		if ((msg.header.StdId & UCANOPEN_NODE_ID_MASK) != p->NodeId)
+		/* Set archived TPDO NodeId */
+		if (__IS_UCANOPEN_COB_ID_TPDO(Header.StdId) &&
+			(Header.StdId & UCANOPEN_NODE_ID_MASK) != p->NodeId)
 		{
-			msg.header.StdId &= ~(UCANOPEN_NODE_ID_MASK);
-			msg.header.StdId |= p->NodeId;
+			Header.StdId &= ~(UCANOPEN_NODE_ID_MASK);
+			Header.StdId |= p->NodeId;
 		}
 
 		/* Data length */
-		msg.header.DLC = ring_buffer_read(p->txBuf);
+		Header.DLC = ring_buffer_read(p->txBuf);
 
 		/* Data */
-		ring_buffer_read_bytes(p->txBuf, msg.data, msg.header.DLC);
+		ring_buffer_read_bytes(p->txBuf, data, Header.DLC);
 
-		if (HAL_CAN_AddTxMessage(&hcan, &msg.header, msg.data, &mailbox) == HAL_OK)
+		if (HAL_CAN_AddTxMessage(&hcan, &Header, data, &mbox) == HAL_OK)
 		{
 			result = UCANOPEN_SUCCESS;
 		}

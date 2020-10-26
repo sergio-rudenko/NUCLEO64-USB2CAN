@@ -27,9 +27,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "lawicel.h"
-
 #include "ucanopen.h"
+#include "lawicel.h"
+#include "ui.h"
 
 /* USER CODE END Includes */
 
@@ -106,12 +106,12 @@ main(void)
 	/* Clock */
 	set_time(946730096);   // Sat, 01 Aug 2020 13:37:00 GMT
 
-	/* interface */
+	/* User interface */
 	*pUserLed = signal_init(LED_GPIO_Port, LED_Pin, SignalActiveLevel_HIGH, 1);
 	*pUserButton = button_init(BUTTON_GPIO_Port, BUTTON_Pin, ButtonActiveLevel_LOW, 1);
 
-	/* Enable UART receive */
-	UART2CAN_UART_Receive(&huart2, pUartRxBuf);
+	/* LAWICEL init */
+	LAWICEL_init(pLawicelInstance, &huart2, &hcan);
 
 	/* uCANopen init */
 	uco_init(&uCO, uCO_OD);
@@ -132,15 +132,13 @@ main(void)
 	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
-
-		lawicel_proceed(pUartRxBuf, pUartTxBuf);
+		LAWICEL_run(pLawicelInstance);
 
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
 
 		uco_run(&uCO);
-
 	}
 	/* USER CODE END 3 */
 }
@@ -196,41 +194,6 @@ SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void
-button_released_callback(Button_t *p)
-{
-	static uint16_t keyIndex = 0; //FIXME!
-
-	if (p->PrevState == ButtonState_Pressed)
-	{
-		signal_blink(pUserLed, 100, 2,
-						signal_get_output(pUserLed) ?
-							SIGNAL_INVERTED : SIGNAL_NORMAL);
-
-		/* switch to next key */
-		keyIndex = (keyIndex + 1 < deviceKeysCount) ?
-			keyIndex + 1 : 1;
-
-		memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * keyIndex], sizeof(AccessKey_t));
-
-		uco_tpdo_transmit(&uCO, 1);
-		uco_tpdo_transmit(&uCO, 2);
-	}
-}
-
-void
-button_pressed_long_callback(Button_t *p)
-{
-	signal_blink(pUserLed, 150, 3,
-					signal_get_output(pUserLed) ?
-						SIGNAL_INVERTED : SIGNAL_NORMAL);
-
-	memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * MASTER_KEY_INDEX], sizeof(AccessKey_t));
-
-	uco_tpdo_transmit(&uCO, 1);
-	uco_tpdo_transmit(&uCO, 2);
-}
 
 /* USER CODE END 4 */
 

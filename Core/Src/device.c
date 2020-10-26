@@ -8,23 +8,15 @@
 #include <string.h>
 #include "device.h"
 
-static Button_t UserButton;
-Button_t *pUserButton = &UserButton;
-
-static Signal_t UserLed;
-Signal_t *pUserLed = &UserLed;
-
-uint16_t deviceKeysCount;
+uint8_t deviceSchedules[DEVICE_SCHEDULES_NUMBER * sizeof(AccessSchedule_t)];
 uint8_t deviceKeys[DEVICE_KEYS_NUMBER * sizeof(AccessKey_t)];
 uint8_t deviceMasterKey[sizeof(AccessKey_t)];
 uint8_t deviceKeyToAppend[sizeof(AccessKey_t)];
 uint8_t deviceKeyToDelete[sizeof(AccessKey_t)];
+uint16_t deviceKeysCount;
 
 /* Received from scanner */
 uint8_t receivedKey[sizeof(AccessKey_t)];
-
-
-uint8_t deviceSchedules[DEVICE_SCHEDULES_NUMBER * sizeof(AccessSchedule_t)];
 
 char deviceSoftwareVersion[32] = "v0.06_DEV";
 

@@ -42,26 +42,6 @@ void MX_CAN_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
-typedef struct CanTxMessage {
-	CAN_TxHeaderTypeDef header;
-	uint8_t data[8];
-} CanTxMessage_t;
-
-typedef struct CanRxMessage {
-	CAN_RxHeaderTypeDef header;
-	uint8_t data[8];
-} CanRxMessage_t;
-
-extern CanTxMessage_t canTxMsg;
-extern CanRxMessage_t canRxMsg;
-
-bool UART2CAN_CAN_SetBitRate(CAN_HandleTypeDef *hcan, uint32_t bitrate);
-
-bool UART2CAN_CAN_Stop(CAN_HandleTypeDef *hcan);
-bool UART2CAN_CAN_Start(CAN_HandleTypeDef *hcan);
-
-bool UART2CAN_CAN_Transmit(CAN_HandleTypeDef *hcan, CanTxMessage_t *msg);
-
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -24,9 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "lawicel.h"
-
-#include "device.h"
+#include "ui.h"
 
 /* USER CODE END Includes */
 
@@ -139,8 +137,6 @@ SysTick_Handler(void)
 	/* USER CODE END SysTick_IRQn 0 */
 	HAL_IncTick();
 	/* USER CODE BEGIN SysTick_IRQn 1 */
-
-	lawicel_timer_tick();
 
 	if (button_is_enabled(pUserButton))
 	{

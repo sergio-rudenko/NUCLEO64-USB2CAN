@@ -85,9 +85,6 @@ extern uint8_t receivedKey[sizeof(AccessKey_t)];
 #define SCHEDULE_RESTRICTED_ACCESS 		1
 extern uint8_t deviceSchedules[DEVICE_SCHEDULES_NUMBER * sizeof(AccessSchedule_t)];
 
-extern Signal_t *pUserLed;
-extern Button_t *pUserButton;
-
 /* prototypes */
 
 void

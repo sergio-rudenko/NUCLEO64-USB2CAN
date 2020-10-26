@@ -37,22 +37,11 @@ extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
 
-#define UART_RX_BUFFER_SIZE		1024
-#define UART_TX_BUFFER_SIZE		8192
-
 /* USER CODE END Private defines */
 
 void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
-extern rBuffer_t *pUartRxBuf;
-extern rBuffer_t *pUartTxBuf;
-
-void UART2CAN_UART_Receive(UART_HandleTypeDef *handle, rBuffer_t *rb);
-void UART2CAN_UART_Transmit(UART_HandleTypeDef *handle, rBuffer_t *rb);
-
-bool UART2CAN_UART_Is_Tx_Busy(UART_HandleTypeDef *handle);
 
 /* USER CODE END Prototypes */
 
