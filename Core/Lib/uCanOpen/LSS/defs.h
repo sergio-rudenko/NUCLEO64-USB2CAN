@@ -1,5 +1,5 @@
 /*
- * uco_lss_defs.h
+ * LSS/defs.h
  *
  *  Created on: Oct 26, 2020
  *      Author: sergi
@@ -8,10 +8,18 @@
 #ifndef LIB_UCANOPEN_UCO_LSS_DEFS_H_
 #define LIB_UCANOPEN_UCO_LSS_DEFS_H_
 
+/* Enable Master functions */
+#define UCANOPEN_LSS_MASTER_ENABLED
+
+/* Enable Slave functions*/
+#define UCANOPEN_LSS_SLAVE_ENABLED
+
+/* LSS Message */
 #define UCANOPEN_COB_ID_LSS_REQUEST						0x7E5
 #define UCANOPEN_COB_ID_LSS_RESPONCE 					0x7E4
 #define UCANOPEN_LSS_LENGTH								8
 
+/* Timeout */
 #define UCANOPEN_LSS_DEFAULT_TIMEOUT					20
 
 /* LSS Mode switch */
@@ -104,6 +112,7 @@ typedef enum uCO_LSS_StoreConfigurationError
 
 typedef struct uCO_LSS
 {
+#ifdef UCANOPEN_LSS_MASTER_ENABLED
 	struct
 	{
 		uCO_LSS_MasterState_t State;
@@ -116,7 +125,9 @@ typedef struct uCO_LSS
 			uint8_t LSSNext;
 		} FastScan;
 	} Master;
+#endif /* UCANOPEN_LSS_MASTER_ENABLED */
 
+#ifdef UCANOPEN_LSS_SLAVE_ENABLED
 	struct
 	{
 		uCO_LSS_SlaveMode_t Mode;
@@ -125,9 +136,11 @@ typedef struct uCO_LSS
 			uint8_t LSSPos;
 		} FastScan;
 	} Slave;
+#endif /* UCANOPEN_LSS_SLAVE_ENABLED */
 
 	uint16_t Timestamp;
 	uint16_t Timeout;
 } uCO_LSS_t;
+
 
 #endif /* LIB_UCANOPEN_UCO_LSS_DEFS_H_ */

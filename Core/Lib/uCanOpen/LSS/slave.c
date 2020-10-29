@@ -7,6 +7,8 @@
 
 #include "lss.h"
 
+#ifdef UCANOPEN_LSS_SLAVE_ENABLED
+
 static ErrorStatus
 on_switch_mode_global(uCO_t *p, uint8_t mode)
 {
@@ -489,3 +491,5 @@ __weak void
 uco_lss_slave_on_store_configuration(uCO_t *p)
 {
 }
+
+#endif /* UCANOPEN_LSS_SLAVE_ENABLED */

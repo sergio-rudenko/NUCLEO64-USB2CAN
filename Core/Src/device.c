@@ -18,7 +18,7 @@ uint16_t deviceKeysCount;
 /* Received from scanner */
 uint8_t receivedKey[sizeof(AccessKey_t)];
 
-char deviceSoftwareVersion[32] = "v0.06_DEV";
+char deviceSoftwareVersion[32] = "v0.07_DEV";
 
 bool deviceUplinkStatus;
 

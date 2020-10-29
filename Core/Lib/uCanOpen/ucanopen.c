@@ -96,6 +96,8 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 			result = uco_proceed_nmt_command(p, msg->data[0], msg->data[1]);
 		}
 	}
+
+#ifdef UCANOPEN_LSS_SLAVE_ENABLED
 	/**
 	 * LSS [Master -> Slave] Messages
 	 */
@@ -105,6 +107,9 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	{
 		result = uco_proceed_lss_request(p, msg->data);
 	}
+#endif /* UCANOPEN_LSS_SLAVE_ENABLED */
+
+#ifdef UCANOPEN_LSS_MASTER_ENABLED
 	/**
 	 * LSS [Slave -> Master] Messages
 	 */
@@ -114,6 +119,8 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	{
 		result = uco_proceed_lss_responce(p, msg->data);
 	}
+#endif /* UCANOPEN_LSS_MASTER_ENABLED */
+
 	/**
 	 * SYNC Message
 	 */
@@ -214,8 +221,13 @@ uco_run(uCO_t *p)
 		p->Timestamp += delta;
 		p->ticks += delta;
 
-		uco_nmt_on_tick(p);
+#ifdef UCANOPEN_LSS_MASTER_ENABLED
+
 		uco_lss_on_tick(p);
+
+#endif /* UCANOPEN_LSS_MASTER_ENABLED */
+
+		uco_nmt_on_tick(p);
 		uco_pdo_on_tick(p);
 		uco_sdo_on_tick(p);
 	}
@@ -235,6 +247,10 @@ uco_run(uCO_t *p)
 
 		/* proceeding */
 		proceed_incoming(p, &msg);
+
+		/* FIXME: Emulator */
+		p->NodeState = (p->NodeId == UCANOPEN_NODE_ID_UNCONFIGURED) ?
+			NODE_STATE_INITIALIZATION : NODE_STATE_OPERATIONAL;
 	}
 
 	/* transmit queued messages */

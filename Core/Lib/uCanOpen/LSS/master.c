@@ -7,6 +7,8 @@
 
 #include "lss.h"
 
+#ifdef UCANOPEN_LSS_MASTER_ENABLED
+
 static inline void
 set_lss_timeout(uCO_t *p, uint16_t timeout)
 {
@@ -463,3 +465,5 @@ uco_lss_master_on_slave_inquire_identity(uCO_t *p, uint32_t *ADDR, uint8_t index
 	UNUSED(ADDR);
 	UNUSED(index);
 }
+
+#endif /* UCANOPEN_LSS_MASTER_ENABLED */
