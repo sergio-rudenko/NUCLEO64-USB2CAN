@@ -30,22 +30,30 @@ LAWICEL_CAN_on_start_callback(LAWICEL_Instance_t *p)
 void
 button_released_callback(Button_t *p)
 {
-	static uint16_t keyIndex = 0; //FIXME!
+//	static uint16_t keyIndex = 0;
 
 	if (p->PrevState == ButtonState_Pressed)
 	{
 		signal_blink(pUserLed, 100, 2,
 						signal_get_output(pUserLed) ?
 							SIGNAL_INVERTED : SIGNAL_NORMAL);
+//FIXME!
+//		/* switch to next key */
+//		keyIndex = (keyIndex + 1 < deviceKeysCount) ?
+//			keyIndex + 1 : 1;
+//
+//		memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * keyIndex], sizeof(AccessKey_t));
+//
+//		uco_tpdo_transmit(&uCO, 1);
+//		uco_tpdo_transmit(&uCO, 2);
 
-		/* switch to next key */
-		keyIndex = (keyIndex + 1 < deviceKeysCount) ?
-			keyIndex + 1 : 1;
+		/* FIXME: Emulator */
 
-		memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * keyIndex], sizeof(AccessKey_t));
+		/* Switch all non-configured nodes to WAITING mode */
+		uco_lss_master_switch_mode_global(&uCO, LSS_SLAVE_MODE_WAITING);
 
-		uco_tpdo_transmit(&uCO, 1);
-		uco_tpdo_transmit(&uCO, 2);
+		/* Searching next non-configured node */
+		uco_lss_master_start_fastscan(&uCO);
 	}
 }
 
@@ -58,6 +66,10 @@ button_pressed_long_callback(Button_t *p)
 
 	memcpy(&receivedKey[0], &deviceKeys[sizeof(AccessKey_t) * MASTER_KEY_INDEX], sizeof(AccessKey_t));
 
-	uco_tpdo_transmit(&uCO, 1);
-	uco_tpdo_transmit(&uCO, 2);
+	/* FIXME: Emulator */
+//	uco_tpdo_transmit(&uCO, 1);
+//	uco_tpdo_transmit(&uCO, 2);
+
+	/* Reset ALL Nodes */
+	uco_nmt_master_send_command(&uCO, UCANOPEN_NMT_CS_RESET_COMMUNICATION, UCANOPEN_NMT_BROADCAST_MESSAGE);
 }

@@ -1,5 +1,5 @@
 /*
- * uco_sdo.c
+ * SDO/sdo.c
  *
  *  Created on: Oct 12, 2020
  *      Author: sergi
@@ -15,7 +15,7 @@
  * 		Download 	=> WRITE
  */
 
-#include "uco_sdo.h"
+#include "sdo.h"
 
 /**
  *
@@ -241,7 +241,7 @@ sdo_segmented_read_handshake(uCO_t *p)
 	reply.data[7] = (p->SDO.segmented.size >> 24) & 0xFF;
 
 	/* set timeout and update timestamp */
-	p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+	p->SDO.Timeout = UCANOPEN_SDO_DEFAULT_TIMEOUT;
 	p->SDO.Timestamp = p->Timestamp;
 
 	return uco_send(p, &reply);
@@ -320,7 +320,7 @@ sdo_segmented_read_process(uCO_t *p, uint8_t clientCommand)
 		else
 		{
 			/* update timeout and timestamp */
-			p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+			p->SDO.Timeout = UCANOPEN_SDO_DEFAULT_TIMEOUT;
 			p->SDO.Timestamp = p->Timestamp;
 		}
 		return UCANOPEN_SUCCESS;
@@ -372,7 +372,7 @@ sdo_segmented_write_handshake(uCO_t *p)
 	reply.data[3] = p->SDO.sub;
 
 	/* set timeout and update timestamp */
-	p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+	p->SDO.Timeout = UCANOPEN_SDO_DEFAULT_TIMEOUT;
 	p->SDO.Timestamp = p->Timestamp;
 
 	return uco_send(p, &reply);
@@ -453,7 +453,7 @@ sdo_segmented_write_process(uCO_t *p, uint8_t clientCommand, uint8_t *clientData
 	else
 	{
 		/* update timeout and timestamp */
-		p->SDO.Timeout = UCANOPEN_SDO_TIMEOUT;
+		p->SDO.Timeout = UCANOPEN_SDO_DEFAULT_TIMEOUT;
 		p->SDO.Timestamp = p->Timestamp;
 	}
 	return uco_send(p, &reply);
@@ -474,7 +474,7 @@ uco_sdo_on_tick(uCO_t *p)
 
 		if (dt >= p->SDO.Timeout)
 		{
-//			uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_TIMED_OUT);
+//FIXME!	uco_SDO_abort(p, NULL, UCANOPEN_SDO_ABORT_REASON_TIMED_OUT);
 			p->SDO.Timestamp = p->Timestamp;
 			p->SDO.Timeout = 0;
 		}
@@ -650,7 +650,7 @@ __weak size_t
 uco_sdo_get_octet_string_size(uCO_t *p, uint16_t index, uint8_t sub)
 {
 	size_t size = 0;
-	uCO_OD_Item_t *item = uco_find_od_item(p, index, sub);
+	uOD_Item_t *item = uco_find_od_item(p, index, sub);
 
 	if (item && item->Type == OCTET_STRING)
 	{
@@ -663,7 +663,7 @@ __weak size_t
 uco_sdo_get_visible_string_length(uCO_t *p, uint16_t index, uint8_t sub)
 {
 	size_t length = 0;
-	uCO_OD_Item_t *item = uco_find_od_item(p, index, sub);
+	uOD_Item_t *item = uco_find_od_item(p, index, sub);
 
 	if (item && item->Type == VISIBLE_STRING)
 	{

@@ -16,7 +16,7 @@
 #define uCO_ODI_2000_02 deviceKeys
 
 const uint8_t uCO_ODI_2000_00 = 2; /* Number of Entries */
-const uCO_OD_Item_t uCO_ODI_2000[] =
+const uOD_Item_t uCO_ODI_2000[] =
 {
 	/* sub | type | access | address */
 	{ 0x00, UNSIGNED8, READ_ONLY, (void*) &uCO_ODI_2000_00 },
@@ -55,7 +55,7 @@ const uCO_OD_Item_t uCO_ODI_2000[] =
 #define uCO_ODI_3000_07 (deviceSchedules[sizeof(AccessSchedule_t) * 7])
 
 const uint8_t uCO_ODI_3000_00 = 7; /* Number of Entries */
-const uCO_OD_Item_t uCO_ODI_3000[] =
+const uOD_Item_t uCO_ODI_3000[] =
 {
 	/* sub | type | access | address */
 	{ 0x00, UNSIGNED8, READ_ONLY, (void*) &uCO_ODI_3000_00 },
@@ -77,7 +77,7 @@ uint16_t uCO_ODI_2004_00;
 /**
  * Manufacturer Object Dictionary
  */
-const uCO_OD_Item_t Manufacturer_OD[] =
+const uOD_Item_t Manufacturer_OD[] =
 {
 	/* index | type | access | address */
 	{ 0x2000, SUBARRAY, READ_ONLY, (void*) &uCO_ODI_2000 },
@@ -90,7 +90,7 @@ const uCO_OD_Item_t Manufacturer_OD[] =
 	{ 0xFFFF, UNDEFINED, READ_ONLY, NULL } // End of dictionary, mandatory
 };
 
-uCO_OD_Item_t*
+uOD_Item_t*
 uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	/** --------------
@@ -103,7 +103,7 @@ uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 		{
 			if (Manufacturer_OD[i].Type == SUBARRAY)
 			{
-				uCO_OD_Item_t *item = Manufacturer_OD[i].address;
+				uOD_Item_t *item = Manufacturer_OD[i].address;
 				uint8_t sub_count = *((uint8_t*) item[0].address);
 				for (int j = 0; j < sub_count + 1; j++)
 				{
@@ -116,7 +116,7 @@ uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 			else
 			{
 				return (sub == 0) ?
-					&((uCO_OD_Item_t*) Manufacturer_OD)[i] : NULL;
+					&((uOD_Item_t*) Manufacturer_OD)[i] : NULL;
 			}
 		}
 	}
@@ -191,7 +191,7 @@ size_t
 uco_sdo_get_octet_string_size(uCO_t *p, uint16_t index, uint8_t sub)
 {
 	size_t size = 0;
-	uCO_OD_Item_t *item = uco_find_od_item(p, index, sub);
+	uOD_Item_t *item = uco_find_od_item(p, index, sub);
 
 	if (item && item->address == deviceKeys)
 	{

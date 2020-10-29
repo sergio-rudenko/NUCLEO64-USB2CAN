@@ -1,20 +1,18 @@
 /*
- * uco_SDO.h
+ * SDO/defs.h
  *
- *  Created on: Oct 9, 2020
+ *  Created on: Oct 27, 2020
  *      Author: sergi
- *
- *  @ref
  */
 
-#ifndef LIB_UCANOPEN_UCO_SDO_H_
-#define LIB_UCANOPEN_UCO_SDO_H_
-
-#include "uco_defs.h"
+#ifndef LIB_UCANOPEN_UCO_SDO_DEFS_H_
+#define LIB_UCANOPEN_UCO_SDO_DEFS_H_
 
 #define UCANOPEN_COB_ID_TSDO 							0x580
 #define UCANOPEN_COB_ID_RSDO 							0x600
 #define UCANOPEN_SDO_LENGTH								8
+
+#define UCANOPEN_SDO_DEFAULT_TIMEOUT					1000
 
 /* SDO Read */
 #define UCANOPEN_SDO_READ_REQUEST						0x40
@@ -57,44 +55,22 @@
 #define UCANOPEN_SDO_ABORT_REASON_UNKNOWN_SUB      		0x06090011UL
 #define UCANOPEN_SDO_ABORT_GENERAL_ERROR				0x08000000UL
 
-/**/
-#define UCANOPEN_SDO_TIMEOUT 							1000
+typedef struct uCO_SDO
+{
+	struct
+	{
+		bool reading;
+		bool toggleBit;
+		size_t size;
+		size_t offset;
+	} segmented;
 
-/* prototypes */
+	uOD_Item_t *Item;
+	uint16_t index;
+	uint8_t sub;
 
-void
-uco_sdo_on_tick(uCO_t *p);
+	uint16_t Timestamp;
+	uint16_t Timeout;
+} uCO_SDO_t;
 
-uCO_ErrorStatus_t
-uco_sdo_abort(uCO_t *p, uint32_t reason);
-
-uCO_ErrorStatus_t
-uco_proceed_sdo_request(uCO_t *p, uint8_t *data);
-
-uCO_ErrorStatus_t
-uco_proceed_sdo_reply(uCO_t *p, uint8_t *data);
-
-/* callback`s */
-
-size_t
-uco_sdo_get_octet_string_size(uCO_t *p, uint16_t index, uint8_t sub);
-
-size_t
-uco_sdo_get_visible_string_length(uCO_t *p, uint16_t index, uint8_t sub);
-
-uCO_ErrorStatus_t
-uco_sdo_prepare_data(uCO_t *p, uint16_t index, uint8_t sub);
-
-uCO_ErrorStatus_t
-uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub);
-
-void
-uco_sdo_on_write_success(uCO_t *p, uint16_t index, uint8_t sub);
-
-void
-uco_sdo_on_read_success(uCO_t *p, uint16_t index, uint8_t sub);
-
-void
-uco_sdo_on_abort(uCO_t *p, uint16_t index, uint8_t sub, uint32_t reason);
-
-#endif /* LIB_UCANOPEN_UCO_SDO_H_ */
+#endif /* LIB_UCANOPEN_UCO_SDO_DEFS_H_ */

@@ -1,5 +1,5 @@
 /*
- * uco_time.h
+ * TIME/time.h
  *
  *  Created on: Oct 16, 2020
  *      Author: sergi
@@ -8,10 +8,7 @@
 #ifndef LIB_UCANOPEN_UCO_TIME_H_
 #define LIB_UCANOPEN_UCO_TIME_H_
 
-#include "uco_defs.h"
-
-#define UCANOPEN_COB_ID_TIME 				0x100
-#define UCANOPEN_TIME_MESSAGE_LENGTH		6
+#include <uCO_defs.h>
 
 /* prototypes */
 

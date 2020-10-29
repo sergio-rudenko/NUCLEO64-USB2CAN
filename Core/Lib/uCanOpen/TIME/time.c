@@ -1,12 +1,12 @@
 /*
- * uco_time.c
+ * TIME/time.c
  *
  *  Created on: Oct 16, 2020
  *      Author: sergi
  */
 
-#include "uco_time.h"
-#include "unixtime.h"
+#include <unixtime.h>
+#include "TIME/time.h"
 
 uCO_ErrorStatus_t
 uco_proceed_time_message(uCO_t *p, uint8_t *data)

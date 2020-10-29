@@ -1,13 +1,13 @@
 /*
- * uco_sync.c
+ * SYNC/sync.c
  *
  *  Created on: Oct 16, 2020
  *      Author: sergi
  */
 
-#include "uco_sync.h"
-#include "uco_nmt.h"
-#include "uco_pdo.h"
+#include "sync.h"
+#include "NMT/nmt.h"
+#include "PDO/pdo.h"
 
 /**
  *
@@ -16,12 +16,13 @@ uCO_ErrorStatus_t
 uco_proceed_sync_request(uCO_t *p)
 {
 	/* Synchronized Heartbeat */
-	if (p->NMT.heartbeatOnSync && p->NMT.HeartbeatTime == 0)
+	if (p->NMT.Heartbeat.sendOnSync &&
+		p->NMT.Heartbeat.Timeout == 0)
 	{
 		/* Update Nodeguard */
-		p->NMT.GuardTimestamp = p->Timestamp;
+		p->NMT.NodeGuard.Timestamp = p->Timestamp;
 
-		uco_send_heartbeat_message(p);
+		uco_nmt_send_heartbeat_message(p);
 	}
 
 	/* TPDO Synchronized transmit */

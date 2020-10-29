@@ -1,11 +1,11 @@
 /*
- * uco_pdo.c
+ * PDO/pdo.c
  *
  *  Created on: Oct 15, 2020
  *      Author: sergi
  */
 
-#include "uco_pdo.h"
+#include "pdo.h"
 
 /**
  *
@@ -18,14 +18,14 @@ uco_pdo_on_tick(uCO_t *p)
 	/* TPDO periodic transmit */
 	for (int i = 0; i < sizeof(p->TPDO) / sizeof(p->TPDO[0]); i++)
 	{
-		if (p->TPDO[i].EventTime)
+		if (p->TPDO[i].Timeout)
 		{
-			dt = p->Timestamp - p->TPDO[i].EventTimestamp;
+			dt = p->Timestamp - p->TPDO[i].Timestamp;
 
-			if (dt >= p->TPDO[i].EventTime)
+			if (dt >= p->TPDO[i].Timeout)
 			{
 				uco_tpdo_transmit(p, i + 1);
-				p->TPDO[i].EventTimestamp = p->Timestamp;
+				p->TPDO[i].Timestamp = p->Timestamp;
 			}
 		}
 	}

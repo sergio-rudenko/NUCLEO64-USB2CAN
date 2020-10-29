@@ -15,6 +15,15 @@
 
 #include <rbuffer.h>
 
+#include <uOD_defs.h>
+#include "EMCY/defs.h"
+#include "SYNC/defs.h"
+#include "TIME/defs.h"
+#include "LSS/defs.h"
+#include "NMT/defs.h"
+#include "PDO/defs.h"
+#include "SDO/defs.h"
+
 #include "can.h"
 
 /** ----------------------------------------------------
@@ -53,28 +62,31 @@
 #define UCANOPEN_COB_ID_MASK 				0x780
 #define UCANOPEN_NODE_ID_MASK 				0x07F
 
-#define __IS_UCANOPEN_COB_ID_NMT(COB_ID)	(COB_ID == UCANOPEN_COB_ID_NMT)
+#define __IS_UCANOPEN_COB_ID_NMT(COB_ID)			(COB_ID == UCANOPEN_COB_ID_NMT)
 
-#define __IS_UCANOPEN_COB_ID_SYNC(COB_ID)	(COB_ID == UCANOPEN_COB_ID_SYNC)
+#define __IS_UCANOPEN_COB_ID_LSS_REQUEST(COB_ID)	(COB_ID == UCANOPEN_COB_ID_LSS_REQUEST)
+#define __IS_UCANOPEN_COB_ID_LSS_RESPONCE(COB_ID)	(COB_ID == UCANOPEN_COB_ID_LSS_RESPONCE)
 
-#define __IS_UCANOPEN_COB_ID_EMCY(COB_ID)	((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_EMCY)
+#define __IS_UCANOPEN_COB_ID_SYNC(COB_ID)			(COB_ID == UCANOPEN_COB_ID_SYNC)
 
-#define __IS_UCANOPEN_COB_ID_TIME(COB_ID)	((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TIME)
+#define __IS_UCANOPEN_COB_ID_EMCY(COB_ID)			((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_EMCY)
 
-#define __IS_UCANOPEN_COB_ID_TPDO(COB_ID)	(((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_1) || \
-											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_2) || \
-											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_3) || \
-											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_4))
+#define __IS_UCANOPEN_COB_ID_TIME(COB_ID)			((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TIME)
 
-#define __IS_UCANOPEN_COB_ID_RPDO(COB_ID)	(((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_1) || \
-											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_2) || \
-											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_3) || \
-											 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_4))
+#define __IS_UCANOPEN_COB_ID_TPDO(COB_ID)			(((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_1) || \
+											 	 	 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_2) || \
+													 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_3) || \
+													 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TPDO_4))
 
-#define __IS_UCANOPEN_COB_ID_TSDO(COB_ID)	((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TSDO)
-#define __IS_UCANOPEN_COB_ID_RSDO(COB_ID)	((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RSDO)
+#define __IS_UCANOPEN_COB_ID_RPDO(COB_ID)			(((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_1) || \
+											 	 	 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_2) || \
+													 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_3) || \
+													 ((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RPDO_4))
 
-#define __UCANOPEN_NODE_ID_FROM_COB_ID(COB_ID)	(~(UCANOPEN_COB_ID_MASK) & COB_ID)
+#define __IS_UCANOPEN_COB_ID_TSDO(COB_ID)			((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_TSDO)
+#define __IS_UCANOPEN_COB_ID_RSDO(COB_ID)			((COB_ID & UCANOPEN_COB_ID_MASK) == UCANOPEN_COB_ID_RSDO)
+
+#define __UCANOPEN_NODE_ID_FROM_COB_ID(COB_ID)		(COB_ID & ~(UCANOPEN_COB_ID_MASK))
 
 /* Endianess */
 #define __UCANOPEN_16BIT_FROM_LE(x0, x1)			(x0 + (x1 << 8))
@@ -90,12 +102,10 @@
 
 /* types */
 typedef int8_t uCO_NodeId_t;
-#define UCANOPEN_NODE_ID_UNDEFINED	((uCO_NodeId_t) 0xFF)
+#define UCANOPEN_NODE_ID_UNCONFIGURED	((uCO_NodeId_t) 0xFF)
 
 typedef uint16_t uCO_CobId_t;
-#define UCANOPEN_COB_ID_UNDEFINED	((uCO_CobId_t) 0xFFF)
-
-typedef uint16_t uCO_Time_t;
+#define UCANOPEN_COB_ID_UNDEFINED		((uCO_CobId_t) 0xFFF)
 
 typedef enum uCO_ErrorStatus
 {
@@ -125,25 +135,6 @@ typedef enum uCO_NodeState
 	NODE_STATE_STOPPED,
 } uCO_NodeState_t;
 
-typedef enum uCO_OD_ItemType
-{
-	UNDEFINED = 0,
-	UNSIGNED8,
-	UNSIGNED16,
-	UNSIGNED32,
-	UNSIGNED64,
-	VISIBLE_STRING,
-	OCTET_STRING,
-	SUBARRAY,
-} uCO_OD_ItemType_t;
-
-typedef enum uCO_OD_ItemAccess
-{
-	READ_ONLY = 0,
-	WRITE_ONLY,
-	READ_WRITE,
-} uCO_OD_ItemAccess_t;
-
 typedef struct uCO_CanMessage
 {
 	uCO_CobId_t CobId;
@@ -167,103 +158,39 @@ typedef union uCO_ErrorRegister
 	uint8_t value;
 } uCO_ErrorRegister_t;
 
-typedef struct uCO_OD_Item
-{
-	uint16_t index;
-	uCO_OD_ItemType_t Type;
-	uCO_OD_ItemAccess_t Access;
-	void *address;
-	size_t size;
-} uCO_OD_Item_t;
-
-/* NMT */
-typedef struct uCO_NMT
-{
-	uCO_Time_t HeartbeatTimestamp;
-	uCO_Time_t HeartbeatTime;
-	bool heartbeatOnSync;
-
-	uCO_Time_t GuardTimestamp;
-	uCO_Time_t GuardTime;
-	uint8_t lifeTimeFactor;
-	bool uplinkIsAlive;
-} uCO_NMT_t;
-
-/* SDO */
-typedef struct uCO_SDO
-{
-	struct
-	{
-		bool reading;
-		bool toggleBit;
-		size_t size;
-		size_t offset;
-	} segmented;
-
-	uCO_OD_Item_t *Item;
-	uint16_t index;
-	uint8_t sub;
-
-	uCO_Time_t Timestamp;
-	uCO_Time_t Timeout;
-} uCO_SDO_t;
-
-/* TPDO */
-typedef struct uCO_TPDO
-{
-	bool sendOnSync;
-
-	uCO_Time_t EventTimestamp;
-	uCO_Time_t EventTime;
-
-	struct
-	{
-		void *address;
-		size_t size;
-	} data;
-} uCO_TPDO_t;
-
-/* RPDO */
-typedef struct uCO_RPDO
-{
-	bool enabled;
-	struct
-	{
-		void *address;
-		size_t size;
-	} data;
-} uCO_RPDO_t;
-
 /* Instance */
 typedef struct uCO
 {
-	uint32_t UID[4]; // 128bit
+	uint32_t ADDR[4]; // 128bit
 
 	uCO_NodeId_t NodeId;
 	uCO_NodeState_t NodeState;
 	uCO_BitTiming_t BitTiming;
 	uCO_ErrorRegister_t ErrorRegister;
 
-	uCO_Time_t Timestamp;
+	uint16_t Timestamp;
 	uint32_t ticks;
 
 	/* protocols */
 	uCO_NMT_t NMT;
+	uCO_LSS_t LSS;
 	uCO_SDO_t SDO;
 
 	/* PDO */
 	uCO_TPDO_t TPDO[4];
 	uCO_RPDO_t RPDO[4];
 
-	uCO_OD_Item_t *OD;
+	/* Object Dictionary */
+	uOD_Item_t *OD;
 
+	/* buffers */
 	rBuffer_t *rxBuf;
 	rBuffer_t *txBuf;
 } uCO_t;
 
 /* externs */
 extern uCO_t uCO;
-extern const uCO_OD_Item_t uCO_OD[];
+extern const uOD_Item_t uCO_OD[];
 
 /* uCO API prototypes */
 
@@ -275,16 +202,16 @@ uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg);
 
 /* Object Dictionary prototypes */
 
-uCO_OD_Item_t*
+uOD_Item_t*
 uco_find_od_item(uCO_t *p, uint16_t id, uint8_t sub);
 
-uCO_OD_Item_t*
+uOD_Item_t*
 uco_find_od_rpdo_item(uCO_t *p, uint16_t id, uint8_t sub);
 
-uCO_OD_Item_t*
+uOD_Item_t*
 uco_find_od_tpdo_item(uCO_t *p, uint16_t id, uint8_t sub);
 
-uCO_OD_Item_t*
+uOD_Item_t*
 uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub);
 
 #endif /* LIB_UCANOPEN_UCO_DEFS_H_ */

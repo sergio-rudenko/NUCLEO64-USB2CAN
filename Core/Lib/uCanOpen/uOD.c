@@ -1,5 +1,5 @@
 /*
- * uco_OD.c
+ * uOD.c
  *
  *  Created on: Oct 12, 2020
  *      Author: sergi
@@ -53,7 +53,7 @@
  *	@Ref: [CAN_and_CANOpen.pdf] D.3 Communication Profile
  */
 
-#include "uco_defs.h"
+#include <uCO_defs.h>
 
 /** -------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.1 Device Type (1000h)
@@ -155,7 +155,7 @@ const char uCO_ODI_1009_00[] = "Prototype 1.0";
  * is transmitted by the master or must be received by the node. This entry must be imple-
  * mented if heartbeats are not used.
  */
-#define uCO_ODI_100C_00	uCO.NMT.GuardTime
+#define uCO_ODI_100C_00	uCO.NMT.NodeGuard.Timeout
 
 
 /** ------------------------------------------------------
@@ -166,7 +166,7 @@ const char uCO_ODI_1009_00[] = "Prototype 1.0";
  * master or reception of a response from a slave before an error condition is generated.
  * This entry must be implemented if heartbeats are not used.
  */
-#define uCO_ODI_100D_00	uCO.NMT.lifeTimeFactor
+#define uCO_ODI_100D_00	uCO.NMT.NodeGuard.lifeTimeFactor
 
 /** -------------------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.5 Producer Heartbeat Time (1017h)
@@ -189,7 +189,7 @@ const char uCO_ODI_1009_00[] = "Prototype 1.0";
  * Example:			4455h = 17493
  * 					The node will transmit a heartbeat message every 17.493 seconds
  */
-#define uCO_ODI_1017_00 uCO.NMT.HeartbeatTime
+#define uCO_ODI_1017_00 uCO.NMT.Heartbeat.Timeout
 
 /** -----------------------------------------------------
  * [CAN_and_CANOpen.pdf] 2.2.5.6 Identity Object (1018h)
@@ -229,20 +229,20 @@ const char uCO_ODI_1009_00[] = "Prototype 1.0";
  * NOTE: uCanOpen realization on stm32 use MCU ID as 01..03 sub`s
  */
 const uint8_t uCO_ODI_1018_00 = 4; /* Number of Entries */
-const uCO_OD_Item_t uCO_ODI_1018[] =
+const uOD_Item_t uCO_ODI_1018[] =
 {
 	/* sub | type | access | address */
 	{ 0x00, UNSIGNED8, READ_ONLY, (void*) &uCO_ODI_1018_00, sizeof(uCO_ODI_1018_00) },
-	{ 0x01, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[0], sizeof(uCO.UID[0]) },
-	{ 0x02, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[1], sizeof(uCO.UID[1]) },
-	{ 0x03, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[2], sizeof(uCO.UID[2]) },
-	{ 0x04, UNSIGNED32, READ_ONLY, (void*) &uCO.UID[3], sizeof(uCO.UID[3]) },
+	{ 0x01, UNSIGNED32, READ_ONLY, (void*) &uCO.ADDR[0], sizeof(uCO.ADDR[0]) },
+	{ 0x02, UNSIGNED32, READ_ONLY, (void*) &uCO.ADDR[1], sizeof(uCO.ADDR[1]) },
+	{ 0x03, UNSIGNED32, READ_ONLY, (void*) &uCO.ADDR[2], sizeof(uCO.ADDR[2]) },
+	{ 0x04, UNSIGNED32, READ_ONLY, (void*) &uCO.ADDR[3], sizeof(uCO.ADDR[3]) },
 };
 
 /**
  * uCacOpen Object Dictionary
  */
-const uCO_OD_Item_t uCO_OD[] =
+const uOD_Item_t uCO_OD[] =
 {
 	/* index | type | access | address */
 	{ 0x1000, UNSIGNED32, READ_ONLY, (void*) &uCO_ODI_1000_00 }, 	// mandatory

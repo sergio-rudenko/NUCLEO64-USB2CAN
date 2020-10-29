@@ -117,7 +117,7 @@ main(void)
 	uco_init(&uCO, uCO_OD);
 
 	//FIXME!
-	uCO.NodeId = 100;
+//	uCO.NodeId = 100;
 	uCO.NodeState = NODE_STATE_OPERATIONAL;
 
 	//uco_tpdo_init(&uCO.TPDO[2], 2000, 0, 0);

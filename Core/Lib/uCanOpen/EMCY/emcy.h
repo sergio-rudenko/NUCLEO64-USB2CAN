@@ -1,5 +1,5 @@
 /*
- * uco_EMCY.h
+ * EMCY/emcy.h
  *
  *  Created on: Oct 9, 2020
  *      Author: sergi
@@ -8,15 +8,7 @@
 #ifndef LIB_UCANOPEN_UCO_EMCY_H_
 #define LIB_UCANOPEN_UCO_EMCY_H_
 
-#include "uco_defs.h"
-
-#define UCANOPEN_COB_ID_EMCY 				0x080
-#define UCANOPEN_EMCY_MESSAGE_LENGTH		8
-
-typedef struct uCO_EMCY
-{
-
-} uCO_EMCY_t;
+#include <uCO_defs.h>
 
 /* prototypes */
 

@@ -88,12 +88,31 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	if (__IS_UCANOPEN_COB_ID_NMT(msg->CobId) &&
 		msg->length == UCANOPEN_NMT_MESSAGE_LENGTH)
 	{
-		NodeId = __UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId);
+		NodeId = msg->data[1];
 
-		if (NodeId == p->NodeId || NodeId == 0 /* Broadcast */)
+		if (NodeId == p->NodeId ||
+			NodeId == UCANOPEN_NMT_BROADCAST_MESSAGE)
 		{
-			result = uco_proceed_nmt_command(p, msg->data);
+			result = uco_proceed_nmt_command(p, msg->data[0], msg->data[1]);
 		}
+	}
+	/**
+	 * LSS [Master -> Slave] Messages
+	 */
+	else
+	if (__IS_UCANOPEN_COB_ID_LSS_REQUEST(msg->CobId) &&
+		msg->length == UCANOPEN_LSS_LENGTH /* Slave */)
+	{
+		result = uco_proceed_lss_request(p, msg->data);
+	}
+	/**
+	 * LSS [Slave -> Master] Messages
+	 */
+	else
+	if (__IS_UCANOPEN_COB_ID_LSS_RESPONCE(msg->CobId) &&
+		msg->length == UCANOPEN_LSS_LENGTH /* Master */)
+	{
+		result = uco_proceed_lss_responce(p, msg->data);
 	}
 	/**
 	 * SYNC Message
@@ -191,11 +210,12 @@ uco_run(uCO_t *p)
 	/* check timestamp and timeouts */
 	if (p->ticks != HAL_GetTick())
 	{
-		uCO_Time_t delta = HAL_GetTick() - p->ticks;
+		uint16_t delta = HAL_GetTick() - p->ticks;
 		p->Timestamp += delta;
 		p->ticks += delta;
 
 		uco_nmt_on_tick(p);
+		uco_lss_on_tick(p);
 		uco_pdo_on_tick(p);
 		uco_sdo_on_tick(p);
 	}
@@ -225,10 +245,10 @@ uco_run(uCO_t *p)
  *
  */
 void
-uco_init(uCO_t *p, const uCO_OD_Item_t pOD[])
+uco_init(uCO_t *p, const uOD_Item_t pOD[])
 {
 	/* Initialize ObjectDicrionary */
-	p->OD = (uCO_OD_Item_t*) pOD;
+	p->OD = (uOD_Item_t*) pOD;
 
 	/* Initialize RX buffer */
 	p->rxBuf = &rxRingBuffer;
@@ -239,18 +259,20 @@ uco_init(uCO_t *p, const uCO_OD_Item_t pOD[])
 	ring_buffer_init(p->txBuf, txData, sizeof(txData));
 
 	/* 128bit UID */
-	p->UID[0] = HAL_GetUIDw0();
-	p->UID[1] = HAL_GetUIDw1();
-	p->UID[2] = HAL_GetUIDw2();
-	p->UID[3] = 0x0UL; //serial
+	p->ADDR[0] = HAL_GetUIDw0();
+	p->ADDR[1] = HAL_GetUIDw1();
+	p->ADDR[2] = HAL_GetUIDw2();
+	p->ADDR[3] = 0x1UL; //serial
 
 	p->NodeState = NODE_STATE_INITIALIZATION;
-	p->NodeId = UCANOPEN_NODE_ID_UNDEFINED;
+	p->NodeId = UCANOPEN_NODE_ID_UNCONFIGURED;
 
-	/* On SYNC Nodeguarding */
-	p->NMT.heartbeatOnSync = true;
-	p->NMT.GuardTime = 1500;
-	p->NMT.lifeTimeFactor = 2;
+	/* Nodeguarding */
+	p->NMT.NodeGuard.Timeout = 1500;
+	p->NMT.NodeGuard.lifeTimeFactor = 2;
+
+	/* Heartbeat */
+	p->NMT.Heartbeat.sendOnSync = true;
 
 	/* ticks sync */
 	p->ticks = HAL_GetTick();
@@ -379,7 +401,7 @@ uco_send(uCO_t *p, uCO_CanMessage_t *msg)
 	return push_message(p->txBuf, msg);
 }
 
-uCO_OD_Item_t*
+uOD_Item_t*
 uco_find_od_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	/** ---------------------------------------------------------
@@ -436,7 +458,7 @@ uco_find_od_item(uCO_t *p, uint16_t id, uint8_t sub)
 		{
 			if (p->OD[i].Type == SUBARRAY)
 			{
-				uCO_OD_Item_t *item = p->OD[i].address;
+				uOD_Item_t *item = p->OD[i].address;
 				uint8_t sub_count = *((uint8_t*) item[0].address);
 				for (int j = 0; j < sub_count + 1; j++)
 				{
@@ -456,19 +478,19 @@ uco_find_od_item(uCO_t *p, uint16_t id, uint8_t sub)
 	return NULL;
 }
 
-__weak uCO_OD_Item_t*
+__weak uOD_Item_t*
 uco_find_od_rpdo_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	return NULL;
 }
 
-__weak uCO_OD_Item_t*
+__weak uOD_Item_t*
 uco_find_od_tpdo_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	return NULL;
 }
 
-__weak uCO_OD_Item_t*
+__weak uOD_Item_t*
 uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 {
 	return NULL;
