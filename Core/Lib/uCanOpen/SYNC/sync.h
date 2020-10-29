@@ -12,7 +12,7 @@
 
 /* prototypes */
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_sync_request(uCO_t *p);
 
 #endif /* LIB_UCANOPEN_UCO_SYNC_H_ */

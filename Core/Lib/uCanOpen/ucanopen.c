@@ -20,10 +20,10 @@ uCO_t uCO;
 /**
  *
  */
-static uCO_ErrorStatus_t
+static ErrorStatus
 pop_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 	size_t numBytes = 2/* CobId */+ 1/* len */;
 
 	if (ring_buffer_available(buf) >= numBytes)
@@ -38,7 +38,7 @@ pop_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
 		/* Data */
 		ring_buffer_read_bytes(buf, msg->data, msg->length);
 
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	else
 	{
@@ -55,7 +55,7 @@ pop_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
 /**
  *
  */
-static uCO_ErrorStatus_t
+static ErrorStatus
 push_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
 {
 	/* COB ID */
@@ -68,16 +68,16 @@ push_message(rBuffer_t *buf, uCO_CanMessage_t *msg)
 	/* Data */
 	ring_buffer_write_bytes(buf, msg->data, msg->length);
 
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }
 
 /**
  *
  */
-static uCO_ErrorStatus_t
+static ErrorStatus
 proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 	uCO_NodeId_t NodeId;
 
 	/* switch protocol */
@@ -155,12 +155,12 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	{
 		/* Check address */
 		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
-			return UCANOPEN_ERROR;
+			return ERROR;
 
 		/* Check node status for SDO processing */
 		if (p->NodeState == NODE_STATE_STOPPED ||
 			p->NodeState == NODE_STATE_INITIALIZATION)
-			return UCANOPEN_ERROR;
+			return ERROR;
 
 		result = uco_proceed_sdo_reply(p, msg->data);
 	}
@@ -173,12 +173,12 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 	{
 		/* Check address */
 		if (__UCANOPEN_NODE_ID_FROM_COB_ID(msg->CobId) != p->NodeId)
-			return UCANOPEN_ERROR;
+			return ERROR;
 
 		/* Check node status for SDO processing */
 		if (p->NodeState == NODE_STATE_STOPPED ||
 			p->NodeState == NODE_STATE_INITIALIZATION)
-			return UCANOPEN_ERROR;
+			return ERROR;
 
 		result = uco_proceed_sdo_request(p, msg->data);
 	}
@@ -238,7 +238,7 @@ uco_run(uCO_t *p)
 	}
 
 	/* transmit queued messages */
-	while (uco_transmit_from_buffer(p) == UCANOPEN_SUCCESS);
+	while (uco_transmit_from_buffer(p) == SUCCESS);
 }
 
 /**
@@ -308,10 +308,10 @@ uco_receive_to_buffer(uCO_t *p, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 	CAN_TxHeaderTypeDef Header = { 0 };
 	uint8_t data[8];
 	uint32_t mbox;
@@ -332,7 +332,7 @@ uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg)
 
 		if (HAL_CAN_AddTxMessage(&hcan, &Header, data, &mbox) == HAL_OK)
 		{
-			result = UCANOPEN_SUCCESS;
+			result = SUCCESS;
 		}
 	}
 	return result;
@@ -341,10 +341,10 @@ uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_transmit_from_buffer(uCO_t *p)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 	CAN_TxHeaderTypeDef Header = { 0 };
 	uint8_t data[8];
 	uint32_t mbox;
@@ -375,7 +375,7 @@ uco_transmit_from_buffer(uCO_t *p)
 
 		if (HAL_CAN_AddTxMessage(&hcan, &Header, data, &mbox) == HAL_OK)
 		{
-			result = UCANOPEN_SUCCESS;
+			result = SUCCESS;
 		}
 	}
 	return result;
@@ -384,7 +384,7 @@ uco_transmit_from_buffer(uCO_t *p)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_send(uCO_t *p, uCO_CanMessage_t *msg)
 {
 	size_t numBytes;

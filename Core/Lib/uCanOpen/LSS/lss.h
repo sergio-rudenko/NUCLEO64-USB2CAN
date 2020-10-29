@@ -15,21 +15,21 @@
 void
 uco_lss_on_tick(uCO_t *p);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_lss_request(uCO_t *p, uint8_t *data);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_lss_responce(uCO_t *p, uint8_t *data);
 
 /* API prototypes */
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_lss_master_switch_mode_global(uCO_t *p, uCO_LSS_SlaveMode_t Mode);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_lss_master_start_fastscan(uCO_t *p);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_lss_master_set_node_id(uCO_t *p, uCO_NodeId_t NodeId);
 
 /* Slave callback functions */

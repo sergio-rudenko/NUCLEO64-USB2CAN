@@ -15,12 +15,12 @@
 void
 uco_pdo_on_tick(uCO_t *p);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_tpdo_transmit(uCO_t *p, int num);
 
 /* callback`s */
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_tpdo_prepare_data(uCO_t *p, int num);
 
 void

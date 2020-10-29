@@ -34,19 +34,19 @@ uco_pdo_on_tick(uCO_t *p)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_tpdo_transmit(uCO_t *p, int num)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 	uCO_CanMessage_t message = { 0 };
 	uCO_TPDO_t *tpdo;
 
 	if (p->NodeState != NODE_STATE_OPERATIONAL)
 	{
-		return UCANOPEN_ERROR;
+		return ERROR;
 	}
 
-	if (uco_tpdo_prepare_data(p, num) == UCANOPEN_SUCCESS)
+	if (uco_tpdo_prepare_data(p, num) == SUCCESS)
 	{
 		switch (num)
 		{
@@ -68,7 +68,7 @@ uco_tpdo_transmit(uCO_t *p, int num)
 				break;
 
 			default:
-				return UCANOPEN_ERROR;
+				return ERROR;
 		}
 
 		if (tpdo->data.address && tpdo->data.size <= 8)
@@ -86,15 +86,15 @@ uco_tpdo_transmit(uCO_t *p, int num)
 	return result;
 }
 
-__weak uCO_ErrorStatus_t
+__weak ErrorStatus
 uco_tpdo_prepare_data(uCO_t *p, int num)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	if (p->TPDO[num].data.address &&
 		p->TPDO[num].data.size <= 8)
 	{
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	return result;
 }

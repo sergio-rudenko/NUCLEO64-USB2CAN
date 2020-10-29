@@ -7,7 +7,7 @@
 
 #include "lss.h"
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_switch_mode_global(uCO_t *p, uint8_t mode)
 {
 	p->LSS.Slave.Mode = (uCO_LSS_SlaveMode_t) mode;
@@ -18,10 +18,10 @@ on_switch_mode_global(uCO_t *p, uint8_t mode)
 	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_CONFIGURATION)
 		uco_lss_slave_on_configuration_mode(p);
 
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_switch_mode_selective(uCO_t *p, uint8_t cs, uint32_t addr)
 {
 	static uint8_t addrIndex = 0;
@@ -93,13 +93,13 @@ on_switch_mode_selective(uCO_t *p, uint8_t cs, uint32_t addr)
 			}
 			break;
 	}
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_configure_node_id(uCO_t *p, uint8_t nodeId)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	/* Prepare reply message */
 	uCO_CanMessage_t reply = { 0 };
@@ -112,7 +112,7 @@ on_configure_node_id(uCO_t *p, uint8_t nodeId)
 		uco_lss_slave_on_configure_node_id(p);
 
 		reply.data[1] = LSS_CONFIGURE_NODE_ID_NO_ERROR;
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	else
 	{
@@ -125,10 +125,10 @@ on_configure_node_id(uCO_t *p, uint8_t nodeId)
 	return result;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_configure_bit_timing(uCO_t *p, uint8_t tableSelector, uint8_t tableIndex)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	/* Prepare reply message */
 	uCO_CanMessage_t reply = { 0 };
@@ -149,10 +149,10 @@ on_configure_bit_timing(uCO_t *p, uint8_t tableSelector, uint8_t tableIndex)
 	return result;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_activate_bit_timing(uCO_t *p, uint16_t switchDelay)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	//TODO
 	UNUSED(switchDelay);
@@ -162,10 +162,10 @@ on_activate_bit_timing(uCO_t *p, uint16_t switchDelay)
 	return result;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_store_configuration(uCO_t *p)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	/* Prepare reply message */
 	uCO_CanMessage_t reply = { 0 };
@@ -183,7 +183,7 @@ on_store_configuration(uCO_t *p)
 	return result;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_inquire_identity(uCO_t *p, uint8_t cs)
 {
 	uint32_t addr;
@@ -220,10 +220,10 @@ on_inquire_identity(uCO_t *p, uint8_t cs)
 	reply.data[0] = cs;
 	uco_send(p, &reply);
 
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_fastscan_request(uCO_t *p, uint8_t *pData)
 {
 	uint8_t LSSSub = pData[6];
@@ -255,14 +255,14 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 		p->LSS.Slave.FastScan.LSSPos = 0;
 		uco_send(p, &reply);
 
-		return UCANOPEN_SUCCESS;
+		return SUCCESS;
 	}
 	else
 	{
 		if (p->LSS.Slave.FastScan.LSSPos != LSSSub)
 		{
 			/* Not participate */
-			return UCANOPEN_ERROR;
+			return ERROR;
 		}
 
 		mask = (uint32_t) 0xFFFFFFFF << BitChecked;
@@ -287,7 +287,7 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 				p->LSS.Slave.FastScan.LSSPos = 0xFF;
 			}
 			/* Not participate */
-			return UCANOPEN_ERROR;
+			return ERROR;
 		}
 
 		if (BitChecked == 0 && (LSSNext < LSSSub))
@@ -300,7 +300,7 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 		p->LSS.Slave.FastScan.LSSPos = LSSNext;
 		uco_send(p, &reply);
 	}
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }
 
 /** --------------------------------------------------------------------------------------------------
@@ -344,10 +344,10 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
  * 				successfully stored in non-volatile memory
  * 				AND state switch to LSS waiting was commanded		none
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_lss_request(uCO_t *p, uint8_t *pData)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	/* FastScan Protocol */
 	if (pData[0] == UCANOPEN_LSS_CS_FAST_SCAN_PROTOCOL &&
@@ -434,7 +434,7 @@ uco_proceed_lss_request(uCO_t *p, uint8_t *pData)
 		pData[0] <= UCANOPEN_LSS_CS_IDENTIFY_REMOTE_SLAVE_ADDR4_HI)
 	{
 		//TODO
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 
 	return result;

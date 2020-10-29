@@ -123,10 +123,10 @@ uco_find_od_manufacturer_item(uCO_t *p, uint16_t id, uint8_t sub)
 	return NULL;
 }
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_tpdo_prepare_data(uCO_t *p, int num)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	static uint8_t tpdoData1[8];
 	static uint8_t tpdoData2[8];
@@ -146,7 +146,7 @@ uco_tpdo_prepare_data(uCO_t *p, int num)
 		p->TPDO[0].data.address = tpdoData1;
 		p->TPDO[0].data.size = sizeof(tpdoData1);
 
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 
 	if (num == 2)
@@ -156,7 +156,7 @@ uco_tpdo_prepare_data(uCO_t *p, int num)
 		p->TPDO[1].data.address = tpdoData2;
 		p->TPDO[1].data.size = sizeof(tpdoData2);
 
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 
 	if (num == 3)
@@ -169,7 +169,7 @@ uco_tpdo_prepare_data(uCO_t *p, int num)
 		p->TPDO[2].data.address = tpdoData3;
 		p->TPDO[2].data.size = sizeof(tpdoData3);
 
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 
 	return result;
@@ -203,7 +203,7 @@ uco_sdo_get_octet_string_size(uCO_t *p, uint16_t index, uint8_t sub)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_sdo_prepare_data(uCO_t *p, uint16_t index, uint8_t sub)
 {
 	/* Master Key */
@@ -212,10 +212,10 @@ uco_sdo_prepare_data(uCO_t *p, uint16_t index, uint8_t sub)
 		memcpy(deviceMasterKey, deviceKeys, sizeof(AccessKey_t));
 	}
 
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub)
 {
 	/* Master Key */
@@ -226,7 +226,7 @@ uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub)
 		if (NewMasterKey->header.type != MASTER_KEY ||
 			NewMasterKey->header.schedule != SCHEDULE_ALWAYS_GRANT_ACCESS)
 		{
-			return UCANOPEN_ERROR;
+			return ERROR;
 		}
 		else
 		{
@@ -245,7 +245,7 @@ uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub)
 			KeyToAppend->header.bits > 64 ||
 			KeyToAppend->header.type == MASTER_KEY)
 		{
-			return UCANOPEN_ERROR;
+			return ERROR;
 		}
 		else
 		{
@@ -268,7 +268,7 @@ uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub)
 			KeyToDelete->header.bits > 64 ||
 			KeyToDelete->header.type == MASTER_KEY)
 		{
-			return UCANOPEN_ERROR;
+			return ERROR;
 		}
 		else
 		{
@@ -289,5 +289,5 @@ uco_sdo_validate_data(uCO_t *p, uint16_t index, uint8_t sub)
 			}
 		}
 	}
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }

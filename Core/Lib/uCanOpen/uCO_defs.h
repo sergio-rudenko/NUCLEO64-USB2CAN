@@ -93,12 +93,12 @@
 #define __UCANOPEN_32BIT_FROM_LE(x0, x1, x2, x3)	(x0 + (x1 << 8) + (x2 << 16) + (x3 << 24))
 
 /* Object Dictionary Defines */
-#define UCANOPEN_OD_RPDO_REGISTER_FIRST			0x1400
-#define UCANOPEN_OD_RPDO_REGISTER_LAST			0x15FF
-#define UCANOPEN_OD_TPDO_REGISTER_FIRST			0x1800
-#define UCANOPEN_OD_TPDO_REGISTER_LAST			0x19FF
-#define UCANOPEN_OD_MANUFACTURER_REGISTER_FIRST	0x2000
-#define UCANOPEN_OD_MANUFACTURER_REGISTER_LAST	0x5FFF
+#define UCANOPEN_OD_RPDO_REGISTER_FIRST				0x1400
+#define UCANOPEN_OD_RPDO_REGISTER_LAST				0x15FF
+#define UCANOPEN_OD_TPDO_REGISTER_FIRST				0x1800
+#define UCANOPEN_OD_TPDO_REGISTER_LAST				0x19FF
+#define UCANOPEN_OD_MANUFACTURER_REGISTER_FIRST		0x2000
+#define UCANOPEN_OD_MANUFACTURER_REGISTER_LAST		0x5FFF
 
 /* types */
 typedef int8_t uCO_NodeId_t;
@@ -106,12 +106,6 @@ typedef int8_t uCO_NodeId_t;
 
 typedef uint16_t uCO_CobId_t;
 #define UCANOPEN_COB_ID_UNDEFINED		((uCO_CobId_t) 0xFFF)
-
-typedef enum uCO_ErrorStatus
-{
-	UCANOPEN_SUCCESS = 0,
-	UCANOPEN_ERROR,
-} uCO_ErrorStatus_t;
 
 /* bitTiming */
 typedef enum uCO_BitTiming
@@ -194,10 +188,10 @@ extern const uOD_Item_t uCO_OD[];
 
 /* uCO API prototypes */
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_send(uCO_t *p, uCO_CanMessage_t *m);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_transmit_direct(uCO_t *p, uCO_CanMessage_t *umsg);
 
 /* Object Dictionary prototypes */

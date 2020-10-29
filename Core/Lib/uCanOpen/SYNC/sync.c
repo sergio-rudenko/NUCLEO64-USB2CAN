@@ -12,7 +12,7 @@
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_sync_request(uCO_t *p)
 {
 	/* Synchronized Heartbeat */
@@ -33,5 +33,5 @@ uco_proceed_sync_request(uCO_t *p)
 			uco_tpdo_transmit(p, i + 1);
 		}
 	}
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }

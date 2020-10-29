@@ -23,7 +23,7 @@ reset_lss_timeout(uCO_t *p)
 
 
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 send_factscan_request(uCO_t *p)
 {
 	/* Request message */
@@ -50,10 +50,10 @@ send_factscan_request(uCO_t *p)
 	return uco_send(p, &request);
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_fastscan_reply(uCO_t *p)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	if (p->LSS.Master.FastScan.BitChecked == 0x80)
 	{
@@ -91,10 +91,10 @@ on_fastscan_reply(uCO_t *p)
 	return result;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_fastscan_confirm(uCO_t *p)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	/* Save Slave address */
 	p->LSS.Master.SlaveADDR[p->LSS.Master.FastScan.LSSSub] =
@@ -123,11 +123,11 @@ on_fastscan_confirm(uCO_t *p)
 	return result;
 }
 
-static uCO_ErrorStatus_t
+static ErrorStatus
 on_identify_slave(uCO_t *p)
 {
 	//TODO
-	return UCANOPEN_ERROR;
+	return ERROR;
 }
 
 /**
@@ -207,10 +207,10 @@ uco_lss_on_tick(uCO_t *p)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	if (data[0] == UCANOPEN_LSS_CS_IDENTIFY_SLAVE_REPLY)
 	{
@@ -243,7 +243,7 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 
 		/* Slave determined and ready to Configuring */
 		uco_lss_master_on_slave_in_config_mode(p, p->LSS.Master.SlaveADDR);
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	else
 	if (data[0] == UCANOPEN_LSS_CS_CONFIGURE_NODE_ID &&
@@ -254,7 +254,7 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 
 		/* Slave return result */
 		uco_lss_master_on_slave_configure_node_id(p, data[1]);
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	else
 	if (data[0] == UCANOPEN_LSS_CS_CONFIGURE_BIT_TIMING &&
@@ -265,7 +265,7 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 
 		/* Slave return result */
 		uco_lss_master_on_slave_configure_bit_timing(p, data[1]);
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	else
 	if (data[0] == UCANOPEN_LSS_CS_STORE_CONFIGURATION &&
@@ -276,7 +276,7 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 
 		/* Slave return result */
 		uco_lss_master_on_slave_store_configuration(p, data[1]);
-		result = UCANOPEN_SUCCESS;
+		result = SUCCESS;
 	}
 	else
 	if (data[0] == UCANOPEN_LSS_CS_INQUIRE_IDENTITY_ADDR1 ||
@@ -310,7 +310,7 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 			/* Slave return result */
 			p->LSS.Master.SlaveADDR[index] = data[1] + (data[2] << 8) + (data[3] << 16) + (data[4] << 24);
 			uco_lss_master_on_slave_inquire_identity(p, p->LSS.Master.SlaveADDR, index);
-			result = UCANOPEN_SUCCESS;
+			result = SUCCESS;
 		}
 	}
 	else
@@ -323,7 +323,7 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_lss_master_start_fastscan(uCO_t *p)
 {
 	/* Initiate variables */
@@ -339,7 +339,7 @@ uco_lss_master_start_fastscan(uCO_t *p)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_lss_master_set_node_id(uCO_t *p, uCO_NodeId_t NodeId)
 {
 	uCO_CanMessage_t request = { 0 };
@@ -358,7 +358,7 @@ uco_lss_master_set_node_id(uCO_t *p, uCO_NodeId_t NodeId)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_lss_master_switch_mode_global(uCO_t *p, uCO_LSS_SlaveMode_t Mode)
 {
 	uCO_CanMessage_t request = { 0 };

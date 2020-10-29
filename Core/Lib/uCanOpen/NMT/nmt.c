@@ -42,7 +42,7 @@ uco_nmt_on_tick(uCO_t *p)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_nmt_send_heartbeat_message(uCO_t *p)
 {
 	uCO_CanMessage_t msg = { 0 };
@@ -65,7 +65,7 @@ uco_nmt_send_heartbeat_message(uCO_t *p)
 			break;
 
 		default:
-			return UCANOPEN_ERROR;
+			return ERROR;
 	}
 	return uco_transmit_direct(p, &msg);
 }
@@ -73,10 +73,10 @@ uco_nmt_send_heartbeat_message(uCO_t *p)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_nmt_command(uCO_t *p, uint8_t cmd, uCO_NodeId_t addr)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_SUCCESS;
+	ErrorStatus result = SUCCESS;
 
 	switch (cmd)
 	{
@@ -105,7 +105,7 @@ uco_proceed_nmt_command(uCO_t *p, uint8_t cmd, uCO_NodeId_t addr)
 
 		default:
 			/* Can`t proceed command...*/
-			result = UCANOPEN_ERROR;
+			result = ERROR;
 			break;
 	}
 	return result;
@@ -116,7 +116,7 @@ uco_proceed_nmt_command(uCO_t *p, uint8_t cmd, uCO_NodeId_t addr)
 /**
  *
  */
-uCO_ErrorStatus_t
+ErrorStatus
 uco_nmt_master_send_command(uCO_t *p, uint8_t Cmd, uCO_NodeId_t Addr)
 {
 	uCO_CanMessage_t umsg = { 0 };

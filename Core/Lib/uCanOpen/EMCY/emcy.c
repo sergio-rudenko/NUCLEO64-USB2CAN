@@ -7,10 +7,10 @@
 
 #include "emcy.h"
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_emcy_message(uCO_t *p, uint8_t *data)
 {
-	uCO_ErrorStatus_t result = UCANOPEN_ERROR;
+	ErrorStatus result = ERROR;
 
 	//TODO
 

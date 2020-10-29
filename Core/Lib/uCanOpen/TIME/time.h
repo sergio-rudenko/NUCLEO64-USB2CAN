@@ -12,7 +12,7 @@
 
 /* prototypes */
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_time_message(uCO_t *p, uint8_t *data);
 
 #endif /* LIB_UCANOPEN_UCO_TIME_H_ */

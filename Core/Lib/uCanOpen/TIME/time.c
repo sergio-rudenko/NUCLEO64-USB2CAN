@@ -8,7 +8,7 @@
 #include <unixtime.h>
 #include "TIME/time.h"
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_proceed_time_message(uCO_t *p, uint8_t *data)
 {
 	time_t ts;
@@ -20,5 +20,5 @@ uco_proceed_time_message(uCO_t *p, uint8_t *data)
 
 	set_time(ts);
 
-	return UCANOPEN_SUCCESS;
+	return SUCCESS;
 }

@@ -20,6 +20,7 @@
 #define UCANOPEN_RX_BUFFER_SIZE	64
 #define UCANOPEN_TX_BUFFER_SIZE 256
 
+
 void
 uco_run(uCO_t *p);
 
@@ -29,7 +30,7 @@ uco_init(uCO_t *p, const uOD_Item_t *pOD);
 void
 uco_receive_to_buffer(uCO_t *p, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData);
 
-uCO_ErrorStatus_t
+ErrorStatus
 uco_transmit_from_buffer(uCO_t *p);
 
 #endif /* LIB_UCANOPEN_UCANOPEN_H_ */
