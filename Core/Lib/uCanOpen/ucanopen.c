@@ -248,9 +248,23 @@ uco_run(uCO_t *p)
 		/* proceeding */
 		proceed_incoming(p, &msg);
 
-		/* FIXME: Emulator */
-		p->NodeState = (p->NodeId == UCANOPEN_NODE_ID_UNCONFIGURED) ?
-			NODE_STATE_INITIALIZATION : NODE_STATE_OPERATIONAL;
+		/* FIXME: Emulator
+		 * INITIALIZATION -> OPERATIONAL */
+		if (p->NodeId != UCANOPEN_NODE_ID_UNCONFIGURED &&
+			p->NodeState == NODE_STATE_INITIALIZATION)
+		{
+			p->NodeState = NODE_STATE_OPERATIONAL;
+			uco_nmt_send_boot_message(p);
+		}
+
+		/* FIXME: Emulator
+		 * OPERATIONAL-> INITIALIZATION */
+		if (p->NodeId == UCANOPEN_NODE_ID_UNCONFIGURED &&
+			p->NodeState != NODE_STATE_INITIALIZATION)
+		{
+			p->NodeState = NODE_STATE_INITIALIZATION;
+		}
+
 	}
 
 	/* transmit queued messages */

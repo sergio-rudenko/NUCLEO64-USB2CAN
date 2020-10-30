@@ -86,8 +86,9 @@ on_switch_mode_selective(uCO_t *p, uint8_t cs, uint32_t addr)
 				reply.data[0] = UCANOPEN_LSS_CS_SWITCH_MODE_SELECTIVE_REPLY;
 				reply.data[1] = p->LSS.Slave.Mode;
 
-				/* Send reply */
-				uco_send(p, &reply);
+				/* To minimize response delay reply transmitted
+				 * directly, without outgoing buffer (queue) */
+				uco_transmit_direct(p, &reply);
 			}
 			else
 			{
@@ -122,7 +123,10 @@ on_configure_node_id(uCO_t *p, uint8_t nodeId)
 	}
 
 	reply.data[0] = UCANOPEN_LSS_CS_CONFIGURE_NODE_ID;
-	uco_send(p, &reply);
+
+	/* To minimize response delay reply transmitted
+	 * directly, without outgoing buffer (queue) */
+	uco_transmit_direct(p, &reply);
 
 	return result;
 }
@@ -144,9 +148,11 @@ on_configure_bit_timing(uCO_t *p, uint8_t tableSelector, uint8_t tableIndex)
 	uco_lss_slave_on_configure_bit_timing(p);
 
 	reply.data[1] = LSS_CONFIGURE_BIT_TIMING_NOT_SUPPORTED;
-
 	reply.data[0] = UCANOPEN_LSS_CS_CONFIGURE_BIT_TIMING;
-	uco_send(p, &reply);
+
+	/* To minimize response delay reply transmitted
+	 * directly, without outgoing buffer (queue) */
+	uco_transmit_direct(p, &reply);
 
 	return result;
 }
@@ -178,9 +184,11 @@ on_store_configuration(uCO_t *p)
 	uco_lss_slave_on_store_configuration(p);
 
 	reply.data[1] = LSS_STORE_CONFIGURATION_NOT_SUPPORTED;
-
 	reply.data[0] = UCANOPEN_LSS_CS_STORE_CONFIGURATION;
-	uco_send(p, &reply);
+
+	/* To minimize response delay reply transmitted
+	 * directly, without outgoing buffer (queue) */
+	uco_transmit_direct(p, &reply);
 
 	return result;
 }
@@ -220,7 +228,10 @@ on_inquire_identity(uCO_t *p, uint8_t cs)
 	reply.data[4] = (addr >> 24) & 0xFF;
 
 	reply.data[0] = cs;
-	uco_send(p, &reply);
+
+	/* To minimize response delay reply transmitted
+	 * directly, without outgoing buffer (queue) */
+	uco_transmit_direct(p, &reply);
 
 	return SUCCESS;
 }
@@ -255,7 +266,10 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 	if (BitChecked == 0x80 /* Initiate FastScan */)
 	{
 		p->LSS.Slave.FastScan.LSSPos = 0;
-		uco_send(p, &reply);
+
+		/* To minimize response delay reply transmitted
+		 * directly, without outgoing buffer (queue) */
+		uco_transmit_direct(p, &reply);
 
 		return SUCCESS;
 	}
@@ -300,7 +314,10 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 		}
 
 		p->LSS.Slave.FastScan.LSSPos = LSSNext;
-		uco_send(p, &reply);
+
+		/* To minimize response delay reply transmitted
+		 * directly, without outgoing buffer (queue) */
+		uco_transmit_direct(p, &reply);
 	}
 	return SUCCESS;
 }

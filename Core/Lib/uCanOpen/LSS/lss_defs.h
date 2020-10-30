@@ -9,7 +9,7 @@
 #define LIB_UCANOPEN_UCO_LSS_DEFS_H_
 
 /* Enable Master functions */
-#define UCANOPEN_LSS_MASTER_ENABLED
+//#define UCANOPEN_LSS_MASTER_ENABLED
 
 /* Enable Slave functions*/
 #define UCANOPEN_LSS_SLAVE_ENABLED

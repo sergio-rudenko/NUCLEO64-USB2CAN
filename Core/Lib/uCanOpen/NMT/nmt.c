@@ -43,31 +43,46 @@ uco_nmt_on_tick(uCO_t *p)
  *
  */
 ErrorStatus
+uco_nmt_send_boot_message(uCO_t *p)
+{
+	uCO_CanMessage_t umsg = { 0 };
+
+	umsg.CobId = UCANOPEN_COB_ID_HEARTBEAT | p->NodeId;
+	umsg.length = UCANOPEN_HEARTBEAT_MESSAGE_LENGTH;
+	umsg.data[0] = UCANOPEN_HEARTBEAT_BOOTUP_MESSAGE;
+
+	return uco_transmit_direct(p, &umsg);
+}
+
+/**
+ *
+ */
+ErrorStatus
 uco_nmt_send_heartbeat_message(uCO_t *p)
 {
-	uCO_CanMessage_t msg = { 0 };
+	uCO_CanMessage_t umsg = { 0 };
 
-	msg.CobId = UCANOPEN_COB_ID_HEARTBEAT | p->NodeId;
-	msg.length = UCANOPEN_HEARTBEAT_MESSAGE_LENGTH;
+	umsg.CobId = UCANOPEN_COB_ID_HEARTBEAT | p->NodeId;
+	umsg.length = UCANOPEN_HEARTBEAT_MESSAGE_LENGTH;
 
 	switch (p->NodeState)
 	{
 		case NODE_STATE_PREOPERATIONAL:
-			msg.data[0] = UCANOPEN_HEARTBEAT_STATE_PREOPERATIONAL;
+			umsg.data[0] = UCANOPEN_HEARTBEAT_STATE_PREOPERATIONAL;
 			break;
 
 		case NODE_STATE_OPERATIONAL:
-			msg.data[0] = UCANOPEN_HEARTBEAT_STATE_OPERATIONAL;
+			umsg.data[0] = UCANOPEN_HEARTBEAT_STATE_OPERATIONAL;
 			break;
 
 		case NODE_STATE_STOPPED:
-			msg.data[0] = UCANOPEN_HEARTBEAT_STATE_STOPPED;
+			umsg.data[0] = UCANOPEN_HEARTBEAT_STATE_STOPPED;
 			break;
 
 		default:
 			return ERROR;
 	}
-	return uco_transmit_direct(p, &msg);
+	return uco_transmit_direct(p, &umsg);
 }
 
 /**

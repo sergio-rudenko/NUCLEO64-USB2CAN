@@ -16,13 +16,13 @@
 #include <rbuffer.h>
 
 #include <uOD_defs.h>
-#include "EMCY/defs.h"
-#include "SYNC/defs.h"
-#include "TIME/defs.h"
-#include "LSS/defs.h"
-#include "NMT/defs.h"
-#include "PDO/defs.h"
-#include "SDO/defs.h"
+#include <EMCY/emcy_defs.h>
+#include <SYNC/sync_defs.h>
+#include <TIME/time_defs.h>
+#include <LSS/lss_defs.h>
+#include <NMT/nmt_defs.h>
+#include <PDO/pdo_defs.h>
+#include <SDO/sdo_defs.h>
 
 #include "can.h"
 
