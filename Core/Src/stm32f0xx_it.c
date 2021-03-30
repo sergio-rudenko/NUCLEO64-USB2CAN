@@ -24,7 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "lawicel.h"
+#include "ui.h"
 
 /* USER CODE END Includes */
 
@@ -59,8 +59,8 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern PCD_HandleTypeDef hpcd_USB_FS;
 extern CAN_HandleTypeDef hcan;
-extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -132,7 +132,17 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-  lawicel_timer_tick();
+
+	if (button_is_enabled(pUserButton))
+	{
+		button_run(pUserButton);
+	}
+
+	if (signal_is_enabled(pUserLed))
+	{
+		signal_run(pUserLed);
+	}
+
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -144,21 +154,7 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles USART2 global interrupt / USART2 wake-up interrupt through EXTI line 26.
-  */
-void USART2_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART2_IRQn 0 */
-
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
-
-  /* USER CODE END USART2_IRQn 1 */
-}
-
-/**
-  * @brief This function handles HDMI-CEC and CAN global interrupts / HDMI-CEC wake-up interrupt through EXTI line 27.
+  * @brief This function handles HDMI-CEC and CAN interrupts / HDMI-CEC wake-up interrupt through EXTI line 27.
   */
 void CEC_CAN_IRQHandler(void)
 {
@@ -169,6 +165,20 @@ void CEC_CAN_IRQHandler(void)
   /* USER CODE BEGIN CEC_CAN_IRQn 1 */
 
   /* USER CODE END CEC_CAN_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USB global interrupt / USB wake-up interrupt through EXTI line 18.
+  */
+void USB_IRQHandler(void)
+{
+  /* USER CODE BEGIN USB_IRQn 0 */
+
+  /* USER CODE END USB_IRQn 0 */
+  HAL_PCD_IRQHandler(&hpcd_USB_FS);
+  /* USER CODE BEGIN USB_IRQn 1 */
+
+  /* USER CODE END USB_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

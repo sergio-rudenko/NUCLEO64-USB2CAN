@@ -20,13 +20,18 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "can.h"
+#include "rtc.h"
 #include "usart.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 #include "lawicel.h"
+#include "ucanopen.h"
+
+#include "ui.h"
 
 /* USER CODE END Includes */
 
@@ -37,7 +42,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -86,32 +90,43 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
-	/* Startup delay for CAN initialization */
-	HAL_Delay(2000);
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_CAN_Init();
+  MX_USB_DEVICE_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
 
-	/* Enable UART receive */
-	UART2CAN_UART_Receive(&huart2, pUartRxBuf);
+	/* Clock */
+	set_time(946730096);   // Sat, 01 Aug 2020 13:37:00 GMT
+
+	/* User interface */
+	*pUserLed = signal_init(LED_GPIO_Port, LED_Pin, SignalActiveLevel_HIGH, 1);
+	*pUserButton = button_init(BUTTON_GPIO_Port, BUTTON_Pin, ButtonActiveLevel_LOW, 1);
+
+	LAWICEL_init(pLawicelInstance, NULL, &hcan);
+
+	/* uCANopen init */
+	uco_init(&uCO, uCO_OD);
+	uCO.NodeState = NODE_STATE_OPERATIONAL; //FIXME!
+
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	while (1) {
-
-		lawicel_proceed(pUartRxBuf, pUartTxBuf);
+	while (1)
+	{
+		LAWICEL_run(pLawicelInstance);
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 
+		uco_run(&uCO);
 	}
   /* USER CODE END 3 */
 }
@@ -129,12 +144,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
-  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV2;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_LSI;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -143,7 +156,7 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI48;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
@@ -151,8 +164,12 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART2
+                              |RCC_PERIPHCLK_RTC;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -171,12 +188,11 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
-
-	while (1) {
+	while (1)
+	{
 		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		HAL_Delay(150);
+		HAL_Delay(200);
 	}
-
   /* USER CODE END Error_Handler_Debug */
 }
 

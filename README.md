@@ -1,5 +1,5 @@
 # NUCLEO64-USB2CAN
-USB (UART) to CAN bus tranciesver ([LAWICEL Protocol](http://www.can232.com/docs/can232_v3.pdf)) based on NUCLEO64-F091 boards
+USB (UART) to CAN bus tranciesver ([LAWICEL Protocol](http://www.can232.com/docs/can232_v3.pdf)) based on NUCLEO64-F072 boards
 Can be useful with [CANhacker program](https://www.mictronics.de/img/2009/12/CANHackerV2.00.01.zip), 
 Linux kernel module [slcan](https://github.com/torvalds/linux/blob/master/drivers/net/can/slcan.c) 
 and DIY implementations also.

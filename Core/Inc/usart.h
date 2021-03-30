@@ -9,17 +9,16 @@
   * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software component is licensed by ST under Ultimate Liberty license
+  * SLA0044, the "License"; You may not use this file except in compliance with
+  * the License. You may obtain a copy of the License at:
+  *                             www.st.com/SLA0044
   *
   ******************************************************************************
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __usart_H
 #define __usart_H
-
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -29,31 +28,17 @@
 
 /* USER CODE BEGIN Includes */
 
-#include <stdbool.h>
-#include <rbuffer.h>
-
 /* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
 
-#define UART_RX_BUFFER_SIZE		1024
-#define UART_TX_BUFFER_SIZE		8192
-
 /* USER CODE END Private defines */
 
 void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
-extern rBuffer_t *pUartRxBuf;
-extern rBuffer_t *pUartTxBuf;
-
-void UART2CAN_UART_Receive(UART_HandleTypeDef *handle, rBuffer_t *rb);
-void UART2CAN_UART_Transmit(UART_HandleTypeDef *handle, rBuffer_t *rb);
-
-bool UART2CAN_UART_Is_Tx_Busy(UART_HandleTypeDef *handle);
 
 /* USER CODE END Prototypes */
 

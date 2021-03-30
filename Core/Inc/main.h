@@ -29,9 +29,21 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_ll_rtc.h"
+#include "stm32f0xx_ll_system.h"
+#include "stm32f0xx_ll_gpio.h"
+#include "stm32f0xx_ll_exti.h"
+#include "stm32f0xx_ll_bus.h"
+#include "stm32f0xx_ll_cortex.h"
+#include "stm32f0xx_ll_rcc.h"
+#include "stm32f0xx_ll_utils.h"
+#include "stm32f0xx_ll_pwr.h"
+#include "stm32f0xx_ll_dma.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "unixtime.h"
 
 /* USER CODE END Includes */
 
@@ -58,17 +70,17 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define BUTTON_Pin GPIO_PIN_13
+#define BUTTON_Pin LL_GPIO_PIN_13
 #define BUTTON_GPIO_Port GPIOC
-#define USART_TX_Pin GPIO_PIN_2
+#define USART_TX_Pin LL_GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
-#define USART_RX_Pin GPIO_PIN_3
+#define USART_RX_Pin LL_GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define LED_Pin GPIO_PIN_5
+#define LED_Pin LL_GPIO_PIN_5
 #define LED_GPIO_Port GPIOA
-#define TMS_Pin GPIO_PIN_13
+#define TMS_Pin LL_GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
-#define TCK_Pin GPIO_PIN_14
+#define TCK_Pin LL_GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
