@@ -64,6 +64,23 @@ SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void
+LAWICEL_CAN_on_stop_callback(void *param)
+{
+	signal_level(pUserLed, RESET);
+}
+
+void
+LAWICEL_CAN_on_start_callback(void *param)
+{
+	signal_level(pUserLed, SET);
+}
+
+void on_waiting_mode(void *param)
+{
+	UNUSED(param);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -112,9 +129,13 @@ main(void)
 
 	/* LAWICEL init */
 	LAWICEL_init(pLawicelInstance, &huart2, &hcan);
+	LAWICEL_register_callback(pLawicelInstance, LAWICEL_ON_CAN_STOP, LAWICEL_CAN_on_stop_callback);
+	LAWICEL_register_callback(pLawicelInstance, LAWICEL_ON_CAN_START, LAWICEL_CAN_on_start_callback);
 
 	/* uCANopen init */
 	uco_init(&uCO, uCO_OD);
+
+	uco_lss_slave_register_callback(&uCO, LSS_SLAVE_ON_SWITCH_TO_WAITING_MODE, on_waiting_mode);
 
 	//FIXME!
 	//uCO.NodeId = 100;

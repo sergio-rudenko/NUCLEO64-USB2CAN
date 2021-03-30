@@ -16,18 +16,6 @@ static Signal_t UserLed;
 Signal_t *pUserLed = &UserLed;
 
 void
-LAWICEL_CAN_on_stop_callback(LAWICEL_Instance_t *p)
-{
-	signal_level(pUserLed, RESET);
-}
-
-void
-LAWICEL_CAN_on_start_callback(LAWICEL_Instance_t *p)
-{
-	signal_level(pUserLed, SET);
-}
-
-void
 button_released_callback(Button_t *p)
 {
 

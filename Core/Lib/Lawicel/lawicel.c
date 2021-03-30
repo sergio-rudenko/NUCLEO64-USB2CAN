@@ -285,7 +285,9 @@ LAWICEL_run(LAWICEL_Instance_t *p)
 				case LAWICEL_CLOSE_CAN:
 					if (CAN_stop(p->hcan) == SUCCESS)
 					{
-						LAWICEL_CAN_on_stop_callback(p);
+						if (p->Callback[LAWICEL_ON_CAN_STOP])
+							p->Callback[LAWICEL_ON_CAN_STOP](p);
+
 						reply_data[0] = LAWICEL_RESPONCE_OK;
 						reply_size = 1;
 					}
@@ -299,7 +301,9 @@ LAWICEL_run(LAWICEL_Instance_t *p)
 				case LAWICEL_OPEN_CAN:
 					if (CAN_start(p->hcan) == SUCCESS)
 					{
-						LAWICEL_CAN_on_start_callback(p);
+						if (p->Callback[LAWICEL_ON_CAN_START])
+							p->Callback[LAWICEL_ON_CAN_START](p);
+
 						reply_data[0] = LAWICEL_RESPONCE_OK;
 						reply_size = 1;
 					}
@@ -531,7 +535,9 @@ LAWICEL_CAN_on_receive(LAWICEL_Instance_t *p, CAN_RxHeaderTypeDef *pHeader, uint
 
 		ring_buffer_write(&p->LawicelTx, '\r');
 
-		LAWICEL_CAN_on_receive_callback(p, pHeader, pData);
+		if (p->Callback[LAWICEL_ON_CAN_RECEIVE])
+			p->Callback[LAWICEL_ON_CAN_RECEIVE](p);
+
 		return SUCCESS;
 	}
 	return ERROR;
@@ -571,39 +577,25 @@ LAWICEL_CAN_transmit(LAWICEL_Instance_t *p)
 
 		if (HAL_CAN_AddTxMessage(p->hcan, &Header, &data[0], &mailbox) == HAL_OK)
 		{
-			LAWICEL_CAN_on_transmit_callback(p, &Header, &data[0]);
+			if (p->Callback[LAWICEL_ON_CAN_TRANSMIT])
+				p->Callback[LAWICEL_ON_CAN_TRANSMIT](p);
+
 			return SUCCESS;
 		}
 	}
 	return ERROR;
 }
 
-/* callback funcrions */
-
-__weak void
-LAWICEL_CAN_on_stop_callback(LAWICEL_Instance_t *p)
+/**
+ *
+ */
+ErrorStatus
+LAWICEL_register_callback(LAWICEL_Instance_t *p, LAWICEL_CallbackType_t Type, LAWICEL_Callback_t cb)
 {
-	UNUSED(p);
-}
-
-__weak void
-LAWICEL_CAN_on_start_callback(LAWICEL_Instance_t *p)
-{
-	UNUSED(p);
-}
-
-void
-LAWICEL_CAN_on_transmit_callback(LAWICEL_Instance_t *p, CAN_TxHeaderTypeDef *pHeader, uint8_t *pData)
-{
-	UNUSED(p);
-	UNUSED(pHeader);
-	UNUSED(pData);
-}
-
-void
-LAWICEL_CAN_on_receive_callback(LAWICEL_Instance_t *p, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData)
-{
-	UNUSED(p);
-	UNUSED(pHeader);
-	UNUSED(pData);
+	if (p && Type < LAWICEL_CB_COUNT)
+	{
+		p->Callback[Type] = cb;
+		return SUCCESS;
+	}
+	return ERROR;
 }

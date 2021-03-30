@@ -29,7 +29,7 @@
 /* version */
 
 #define CONVERTER_VERSION_HW		"v001_EMU"
-#define CONVERTER_VERSION_SW		"v007"
+#define CONVERTER_VERSION_SW		"v008"
 
 /* constants */
 
@@ -63,6 +63,19 @@ typedef enum LAWICEL_TimestampState
 	LAWICEL_TIMESTAMP_ENABLED = 1,
 } LAWICEL_TimestampState_t;
 
+typedef enum LAWICEL_CallbackType
+{
+	LAWICEL_ON_CAN_STOP = 0,
+	LAWICEL_ON_CAN_START,
+	LAWICEL_ON_CAN_RECEIVE,
+	LAWICEL_ON_CAN_TRANSMIT,
+
+	LAWICEL_CB_COUNT // Do not remove!
+} LAWICEL_CallbackType_t;
+
+typedef void
+(*LAWICEL_Callback_t)(void*);
+
 typedef struct LAWICEL_Instance
 {
 	UART_HandleTypeDef *huart;
@@ -71,6 +84,8 @@ typedef struct LAWICEL_Instance
 	rBuffer_t LawicelRx;
 	rBuffer_t LawicelTx;
 	rBuffer_t CanTx;
+
+	LAWICEL_Callback_t Callback[LAWICEL_CB_COUNT];
 
 	LAWICEL_TimestampState_t TimestampState;
 	uint32_t savedTicks;
@@ -113,33 +128,7 @@ LAWICEL_CAN_on_receive(LAWICEL_Instance_t*, CAN_RxHeaderTypeDef *pHeader, uint8_
 ErrorStatus
 LAWICEL_CAN_transmit(LAWICEL_Instance_t*);
 
-/* callback funcrions */
+ErrorStatus
+LAWICEL_register_callback(LAWICEL_Instance_t*, LAWICEL_CallbackType_t Type, LAWICEL_Callback_t cb);
 
-void
-LAWICEL_CAN_on_stop_callback(LAWICEL_Instance_t*);
-
-void
-LAWICEL_CAN_on_start_callback(LAWICEL_Instance_t*);
-
-void
-LAWICEL_CAN_on_transmit_callback(LAWICEL_Instance_t*, CAN_TxHeaderTypeDef *pHeader, uint8_t *pData);
-
-void
-LAWICEL_CAN_on_receive_callback(LAWICEL_Instance_t*, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData);
-
-
-//void
-//lawicel_proceed(rBuffer_t *rx, rBuffer_t *tx);
-//
-//void
-//lawicel_timer_tick();
-//
-//bool
-//lawicel_can_set_bitrate(rBuffer_t *rx);
-//
-//bool
-//lawicel_can_transmit(rBuffer_t *rx, CanTxMessage_t *msg);
-//
-//bool
-//lawicel_can_receive(rBuffer_t *tx, CanRxMessage_t *msg);
 #endif /* INC_LAWICEL_H_ */

@@ -9,8 +9,7 @@
 #define LIB_UCANOPEN_UCO_LSS_DEFS_H_
 
 /* Enable Master functions */
-//#define UCANOPEN_LSS_MASTER_ENABLED
-
+#define UCANOPEN_LSS_MASTER_ENABLED
 /* Enable Slave functions*/
 #define UCANOPEN_LSS_SLAVE_ENABLED
 
@@ -110,37 +109,91 @@ typedef enum uCO_LSS_StoreConfigurationError
 	LSS_STORE_CONFIGURATION_VENDOR_ERROR = 0xFF,
 } uCO_LSS_StoreConfigurationError_t;
 
+#ifdef UCANOPEN_LSS_SLAVE_ENABLED
+/** --------------------------------------------------------------------------
+ *  LSS Slave
+ * -------------------------------------------------------------------------*/
+typedef enum uCO_LSS_SlaveCallbackType
+{
+	LSS_SLAVE_ON_SWITCH_TO_WAITING_MODE = 0,
+	LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE,
+	LSS_SLAVE_ON_CONFIGURE_NODE_ID,
+	LSS_SLAVE_ON_CONFIGURE_BIT_TIMING,
+	LSS_SLAVE_ON_ACTIVATE_BIT_TIMING,
+	LSS_SLAVE_ON_STORE_CONFIGURATION,
+
+	LSS_SLAVE_CB_COUNT, // Do not remove!
+} uCO_LSS_SlaveCallbackType_t;
+
+/* callback prototype */
+typedef void
+(*uCO_LSS_SlaveCallback_t)(void*);
+
+typedef struct uCO_LSS_Slave
+{
+	uCO_LSS_SlaveMode_t Mode;
+	uCO_LSS_SlaveCallback_t Callback[LSS_SLAVE_CB_COUNT];
+	struct
+	{
+		uint8_t LSSPos;
+	} FastScan;
+} uCO_LSS_Slave_t;
+
+#endif /* UCANOPEN_LSS_SLAVE_ENABLED */
+
+#ifdef UCANOPEN_LSS_MASTER_ENABLED
+/** --------------------------------------------------------------------------
+ *  LSS Master
+ * -------------------------------------------------------------------------*/
+typedef enum uCO_LSS_MasterCallbackType
+{
+	LSS_MASTER_ON_SET_SLAVE_MODE = 0,
+	LSS_MASTER_ON_SET_SLAVE_NODE_ID,
+	LSS_MASTER_ON_SET_SLAVE_BIT_TIMING,
+	LSS_MASTER_ON_STORE_SLAVE_CONFIGURATION,
+	LSS_MASTER_ON_INQUIRE_SLAVE_IDENTITY,
+
+	LSS_MASTER_CB_COUNT, // Do not remove!
+} uCO_LSS_MasterCallbackType_t;
+
+/* callback prototype */
+typedef void
+(*uCO_LSS_MasterCallback_t)(void*, uint32_t);
+
+typedef struct uCO_LSS_Master
+{
+	uCO_LSS_MasterState_t State;
+	uCO_LSS_MasterCallbackType_t Callback[LSS_MASTER_CB_COUNT];
+
+	uint32_t SlaveADDR[4];
+
+	struct
+	{
+		uint32_t IDNumber;
+		uint8_t BitChecked;
+		uint8_t LSSSub;
+		uint8_t LSSNext;
+	} FastScan;
+} uCO_LSS_Master_t;
+
+#endif /* UCANOPEN_LSS_MASTER_ENABLED */
+
 typedef struct uCO_LSS
 {
 #ifdef UCANOPEN_LSS_MASTER_ENABLED
-	struct
-	{
-		uCO_LSS_MasterState_t State;
-		uint32_t SlaveADDR[4];
-		struct
-		{
-			uint32_t IDNumber;
-			uint8_t BitChecked;
-			uint8_t LSSSub;
-			uint8_t LSSNext;
-		} FastScan;
-	} Master;
+
+	uCO_LSS_Master_t Master;
+
 #endif /* UCANOPEN_LSS_MASTER_ENABLED */
 
 #ifdef UCANOPEN_LSS_SLAVE_ENABLED
-	struct
-	{
-		uCO_LSS_SlaveMode_t Mode;
-		struct
-		{
-			uint8_t LSSPos;
-		} FastScan;
-	} Slave;
+
+	uCO_LSS_Slave_t Slave;
+
 #endif /* UCANOPEN_LSS_SLAVE_ENABLED */
 
 	uint16_t Timestamp;
 	uint16_t Timeout;
 } uCO_LSS_t;
-
 
 #endif /* LIB_UCANOPEN_UCO_LSS_DEFS_H_ */

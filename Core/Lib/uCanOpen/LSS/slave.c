@@ -14,11 +14,13 @@ on_switch_mode_global(uCO_t *p, uint8_t mode)
 {
 	p->LSS.Slave.Mode = (uCO_LSS_SlaveMode_t) mode;
 
-	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_WAITING)
-		uco_lss_slave_on_waiting_mode(p);
+	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_WAITING &&
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_WAITING_MODE])
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_WAITING_MODE](p);
 
-	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_CONFIGURATION)
-		uco_lss_slave_on_configuration_mode(p);
+	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_CONFIGURATION &&
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE])
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE](p);
 
 	return SUCCESS;
 }
@@ -32,13 +34,6 @@ on_switch_mode_selective(uCO_t *p, uint8_t cs, uint32_t addr)
 	uCO_CanMessage_t reply = { 0 };
 	reply.CobId = UCANOPEN_COB_ID_LSS_RESPONCE;
 	reply.length = UCANOPEN_LSS_LENGTH;
-
-	/* Switch Slave mode to default */
-	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_CONFIGURATION)
-	{
-		p->LSS.Slave.Mode = LSS_SLAVE_MODE_WAITING;
-		uco_lss_slave_on_waiting_mode(p);
-	}
 
 	/* Proceed address */
 	switch (cs)
@@ -81,7 +76,9 @@ on_switch_mode_selective(uCO_t *p, uint8_t cs, uint32_t addr)
 			{
 				/* Switch to Slave Configuration Mode */
 				p->LSS.Slave.Mode = LSS_SLAVE_MODE_CONFIGURATION;
-				uco_lss_slave_on_configuration_mode(p);
+
+				if (p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE])
+					p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE](p);
 
 				reply.data[0] = UCANOPEN_LSS_CS_SWITCH_MODE_SELECTIVE_REPLY;
 				reply.data[1] = p->LSS.Slave.Mode;
@@ -112,7 +109,9 @@ on_configure_node_id(uCO_t *p, uint8_t nodeId)
 	if (nodeId > 0 && nodeId <= 127)
 	{
 		p->NodeId = nodeId;
-		uco_lss_slave_on_configure_node_id(p);
+
+		if (p->LSS.Slave.Callback[LSS_SLAVE_ON_CONFIGURE_NODE_ID])
+			p->LSS.Slave.Callback[LSS_SLAVE_ON_CONFIGURE_NODE_ID](p);
 
 		reply.data[1] = LSS_CONFIGURE_NODE_ID_NO_ERROR;
 		result = SUCCESS;
@@ -141,11 +140,12 @@ on_configure_bit_timing(uCO_t *p, uint8_t tableSelector, uint8_t tableIndex)
 	reply.CobId = UCANOPEN_COB_ID_LSS_RESPONCE;
 	reply.length = UCANOPEN_LSS_LENGTH;
 
-	//TODO
+//TODO
 	UNUSED(tableSelector);
 	UNUSED(tableIndex);
 
-	uco_lss_slave_on_configure_bit_timing(p);
+	if (p->LSS.Slave.Callback[LSS_SLAVE_ON_CONFIGURE_BIT_TIMING])
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_CONFIGURE_BIT_TIMING](p);
 
 	reply.data[1] = LSS_CONFIGURE_BIT_TIMING_NOT_SUPPORTED;
 	reply.data[0] = UCANOPEN_LSS_CS_CONFIGURE_BIT_TIMING;
@@ -162,10 +162,11 @@ on_activate_bit_timing(uCO_t *p, uint16_t switchDelay)
 {
 	ErrorStatus result = ERROR;
 
-	//TODO
+//TODO
 	UNUSED(switchDelay);
 
-	uco_lss_slave_on_activate_bit_timing(p);
+	if (p->LSS.Slave.Callback[LSS_SLAVE_ON_ACTIVATE_BIT_TIMING])
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_ACTIVATE_BIT_TIMING](p);
 
 	return result;
 }
@@ -180,8 +181,10 @@ on_store_configuration(uCO_t *p)
 	reply.CobId = UCANOPEN_COB_ID_LSS_RESPONCE;
 	reply.length = UCANOPEN_LSS_LENGTH;
 
-	//TODO
-	uco_lss_slave_on_store_configuration(p);
+//TODO
+
+	if (p->LSS.Slave.Callback[LSS_SLAVE_ON_STORE_CONFIGURATION])
+		p->LSS.Slave.Callback[LSS_SLAVE_ON_STORE_CONFIGURATION](p);
 
 	reply.data[1] = LSS_STORE_CONFIGURATION_NOT_SUPPORTED;
 	reply.data[0] = UCANOPEN_LSS_CS_STORE_CONFIGURATION;
@@ -260,7 +263,9 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 	if (p->LSS.Slave.Mode == LSS_SLAVE_MODE_CONFIGURATION)
 	{
 		p->LSS.Slave.Mode = LSS_SLAVE_MODE_WAITING;
-		uco_lss_slave_on_waiting_mode(p);
+
+		if (p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_WAITING_MODE])
+			p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_WAITING_MODE](p);
 	}
 
 	if (BitChecked == 0x80 /* Initiate FastScan */)
@@ -299,7 +304,7 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 			if (LSSSub != LSSNext)
 			{
 				/* Address is NOT confirmed,
-				   stop participating in this scan */
+				 stop participating in this scan */
 				p->LSS.Slave.FastScan.LSSPos = 0xFF;
 			}
 			/* Not participate */
@@ -310,7 +315,9 @@ on_fastscan_request(uCO_t *p, uint8_t *pData)
 		{
 			/* Switch to Slave Configuration Mode */
 			p->LSS.Slave.Mode = LSS_SLAVE_MODE_CONFIGURATION;
-			uco_lss_slave_on_configuration_mode(p);
+
+			if (p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE])
+				p->LSS.Slave.Callback[LSS_SLAVE_ON_SWITCH_TO_CONFIGURATION_MODE](p);
 		}
 
 		p->LSS.Slave.FastScan.LSSPos = LSSNext;
@@ -459,54 +466,70 @@ uco_proceed_lss_request(uCO_t *p, uint8_t *pData)
 	return result;
 }
 
-/* callback functions */
-
 /**
  *
  */
-__weak void
-uco_lss_slave_on_waiting_mode(uCO_t *p)
+ErrorStatus
+uco_lss_slave_register_callback(uCO_t *p,
+								uCO_LSS_SlaveCallbackType_t Type,
+								uCO_LSS_SlaveCallback_t function)
 {
+	if (p && Type < LSS_SLAVE_CB_COUNT)
+	{
+		p->LSS.Slave.Callback[Type] = function;
+		return SUCCESS;
+	}
+	return ERROR;
 }
 
-/**
- *
- */
-__weak void
-uco_lss_slave_on_configuration_mode(uCO_t *p)
-{
-}
-
-/**
- *
- */
-__weak void
-uco_lss_slave_on_configure_node_id(uCO_t *p)
-{
-}
-
-/**
- *
- */
-__weak void
-uco_lss_slave_on_configure_bit_timing(uCO_t *p)
-{
-}
-
-/**
- *
- */
-__weak void
-uco_lss_slave_on_activate_bit_timing(uCO_t *p)
-{
-}
-
-/**
- *
- */
-__weak void
-uco_lss_slave_on_store_configuration(uCO_t *p)
-{
-}
+///* callback functions */
+//
+///**
+// *
+// */
+//__weak void
+//uco_lss_slave_on_waiting_mode(uCO_t *p)
+//{
+//}
+//
+///**
+// *
+// */
+//__weak void
+//uco_lss_slave_on_configuration_mode(uCO_t *p)
+//{
+//}
+//
+///**
+// *
+// */
+//__weak void
+//uco_lss_slave_on_configure_node_id(uCO_t *p)
+//{
+//}
+//
+///**
+// *
+// */
+//__weak void
+//uco_lss_slave_on_configure_bit_timing(uCO_t *p)
+//{
+//}
+//
+///**
+// *
+// */
+//__weak void
+//uco_lss_slave_on_activate_bit_timing(uCO_t *p)
+//{
+//}
+//
+///**
+// *
+// */
+//__weak void
+//uco_lss_slave_on_store_configuration(uCO_t *p)
+//{
+//}
 
 #endif /* UCANOPEN_LSS_SLAVE_ENABLED */

@@ -18,8 +18,12 @@ uco_lss_on_tick(uCO_t *p);
 ErrorStatus
 uco_proceed_lss_request(uCO_t *p, uint8_t *data);
 
+
 ErrorStatus
 uco_proceed_lss_responce(uCO_t *p, uint8_t *data);
+
+ErrorStatus
+uco_lss_slave_register_callback(uCO_t *p, uCO_LSS_SlaveCallbackType_t Type, uCO_LSS_SlaveCallback_t cb);
 
 /* API prototypes */
 
@@ -32,25 +36,25 @@ uco_lss_master_start_fastscan(uCO_t *p);
 ErrorStatus
 uco_lss_master_set_node_id(uCO_t *p, uCO_NodeId_t NodeId);
 
-/* Slave callback functions */
-
-void
-uco_lss_slave_on_waiting_mode(uCO_t *p);
-
-void
-uco_lss_slave_on_configuration_mode(uCO_t *p);
-
-void
-uco_lss_slave_on_configure_node_id(uCO_t *p);
-
-void
-uco_lss_slave_on_configure_bit_timing(uCO_t *p);
-
-void
-uco_lss_slave_on_activate_bit_timing(uCO_t *p);
-
-void
-uco_lss_slave_on_store_configuration(uCO_t *p);
+///* Slave callback functions */
+//
+//void
+//uco_lss_slave_on_waiting_mode(uCO_t *p);
+//
+//void
+//uco_lss_slave_on_configuration_mode(uCO_t *p);
+//
+//void
+//uco_lss_slave_on_configure_node_id(uCO_t *p);
+//
+//void
+//uco_lss_slave_on_configure_bit_timing(uCO_t *p);
+//
+//void
+//uco_lss_slave_on_activate_bit_timing(uCO_t *p);
+//
+//void
+//uco_lss_slave_on_store_configuration(uCO_t *p);
 
 /* Master callback functions */
 
