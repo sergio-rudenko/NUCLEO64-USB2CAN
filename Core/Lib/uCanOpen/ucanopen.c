@@ -82,6 +82,8 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 
 	/* switch protocol */
 
+
+
 	/**
 	 * NMT Command
 	 */
@@ -97,7 +99,27 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 		}
 	}
 
-#ifdef UCANOPEN_LSS_SLAVE_ENABLED
+
+#ifdef UCANOPEN_LSS_MASTER_ENABLED
+	/**
+	 * LSS [Slave -> Master] Messages
+	 */
+	if (p->LSS.Master.State == LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY ||
+		p->LSS.Master.State == LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY_PAUSE)
+	{
+		/* Renew timeout */
+		p->LSS.Timestamp = p->Timestamp;
+		p->LSS.Timeout = UCANOPEN_LSS_FAST_SCAN_REPLY_PAUSE;
+	}
+
+	if (__IS_UCANOPEN_COB_ID_LSS_RESPONCE(msg->CobId) &&
+		msg->length == UCANOPEN_LSS_LENGTH /* Master */)
+	{
+		result = uco_proceed_lss_responce(p, msg->data);
+	}
+#endif /* UCANOPEN_LSS_MASTER_ENABLED */
+
+	#ifdef UCANOPEN_LSS_SLAVE_ENABLED
 	/**
 	 * LSS [Master -> Slave] Messages
 	 */
@@ -108,18 +130,6 @@ proceed_incoming(uCO_t *p, uCO_CanMessage_t *msg)
 		result = uco_proceed_lss_request(p, msg->data);
 	}
 #endif /* UCANOPEN_LSS_SLAVE_ENABLED */
-
-#ifdef UCANOPEN_LSS_MASTER_ENABLED
-	/**
-	 * LSS [Slave -> Master] Messages
-	 */
-	else
-	if (__IS_UCANOPEN_COB_ID_LSS_RESPONCE(msg->CobId) &&
-		msg->length == UCANOPEN_LSS_LENGTH /* Master */)
-	{
-		result = uco_proceed_lss_responce(p, msg->data);
-	}
-#endif /* UCANOPEN_LSS_MASTER_ENABLED */
 
 	/**
 	 * SYNC Message

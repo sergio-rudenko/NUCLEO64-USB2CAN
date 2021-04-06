@@ -23,8 +23,6 @@ reset_lss_timeout(uCO_t *p)
 	p->LSS.Timeout = 0;
 }
 
-
-
 static ErrorStatus
 send_factscan_request(uCO_t *p)
 {
@@ -53,6 +51,32 @@ send_factscan_request(uCO_t *p)
 }
 
 static ErrorStatus
+on_fastscan_reply_timeout(uCO_t *p)
+{
+	ErrorStatus result = SUCCESS;
+
+	if (p->LSS.Master.FastScan.BitChecked == 0x80)
+	{
+		/* No more non-configured node(s) */
+		uco_lss_master_on_fastscan_end(p);
+	}
+	else
+	{
+		/* '1' in BitChecked position */
+		p->LSS.Master.FastScan.IDNumber |=
+		1 << p->LSS.Master.FastScan.BitChecked;
+
+		/* BitChecked decrement */
+		if (p->LSS.Master.FastScan.BitChecked >= 1)
+			p->LSS.Master.FastScan.BitChecked -= 1;
+
+		p->LSS.Master.State = LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY;
+		send_factscan_request(p);
+	}
+	return result;
+}
+
+static ErrorStatus
 on_fastscan_reply(uCO_t *p)
 {
 	ErrorStatus result = ERROR;
@@ -70,7 +94,10 @@ on_fastscan_reply(uCO_t *p)
 		p->LSS.Master.FastScan.BitChecked <= 31)
 	{
 		/* '0' in BitChecked position confirmed */
-		p->LSS.Master.FastScan.BitChecked -= 1;
+		if (p->LSS.Master.FastScan.BitChecked >= 1)
+			p->LSS.Master.FastScan.BitChecked -= 1;
+
+		p->LSS.Master.State = LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY;
 		result = send_factscan_request(p);
 	}
 	else
@@ -153,23 +180,11 @@ uco_lss_on_tick(uCO_t *p)
 			switch (p->LSS.Master.State)
 			{
 				case LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY:
-					if (p->LSS.Master.FastScan.BitChecked == 0x80)
-					{
-						/* No more non-configured node(s) */
-						uco_lss_master_on_fastscan_end(p);
-					}
-					else
-					{
-						/* '1' in BitChecked position */
-						p->LSS.Master.FastScan.IDNumber |=
-						1 << p->LSS.Master.FastScan.BitChecked;
+					on_fastscan_reply_timeout(p);
+					break;
 
-						/* BitChecked decrement */
-						if (p->LSS.Master.FastScan.BitChecked >= 1)
-							p->LSS.Master.FastScan.BitChecked -= 1;
-
-						send_factscan_request(p);
-					}
+				case LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY_PAUSE:
+					on_fastscan_reply(p);
 					break;
 
 				case LSS_MASTER_STATE_AWAITING_FASTSCAN_CONFIRM:
@@ -219,11 +234,9 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 		switch (p->LSS.Master.State)
 		{
 			case LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY:
-				result = on_fastscan_reply(p);
-				break;
-
-			case LSS_MASTER_STATE_AWAITING_FASTSCAN_CONFIRM:
-				result = on_fastscan_confirm(p);
+				case LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY_PAUSE:
+				p->LSS.Master.State = LSS_MASTER_STATE_AWAITING_FASTSCAN_REPLY_PAUSE;
+				set_lss_timeout(p, UCANOPEN_LSS_FAST_SCAN_REPLY_PAUSE);
 				break;
 
 			case LSS_MASTER_STATE_AWAITING_IDENTIFY_SLAVE_REPLY:
@@ -231,6 +244,10 @@ uco_proceed_lss_responce(uCO_t *p, uint8_t *data)
 				reset_lss_timeout(p);
 
 				result = on_identify_slave(p);
+				break;
+
+			case LSS_MASTER_STATE_AWAITING_FASTSCAN_CONFIRM:
+				result = on_fastscan_confirm(p);
 				break;
 
 			default:
@@ -391,8 +408,7 @@ uco_lss_master_on_fastscan_error(uCO_t *p, uCO_LSS_FastscanError_t err)
 __weak void
 uco_lss_master_on_fastscan_success(uCO_t *p)
 {
-	/* FIXME: Emulator */
-	uco_lss_master_set_node_id(p, 100);
+	UNUSED(p);
 }
 
 /**

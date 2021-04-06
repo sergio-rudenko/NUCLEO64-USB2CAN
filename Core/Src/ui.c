@@ -16,6 +16,10 @@ Button_t *pUserButton = &UserButton;
 static Signal_t UserLed;
 Signal_t *pUserLed = &UserLed;
 
+
+static int8_t slaveNodeId = 100;
+
+
 void
 LAWICEL_CAN_on_stop_callback(LAWICEL_Instance_t *p)
 {
@@ -27,6 +31,15 @@ LAWICEL_CAN_on_start_callback(LAWICEL_Instance_t *p)
 {
 	signal_level(pUserLed, SET);
 }
+
+void
+uco_lss_master_on_fastscan_success(uCO_t *p)
+{
+	/* Emulator */
+	uco_lss_master_set_node_id(p, slaveNodeId);
+	slaveNodeId = ((slaveNodeId + 1) <= 125) ? (slaveNodeId + 1) : slaveNodeId;
+}
+
 
 void
 button_released_callback(Button_t *p)
@@ -65,6 +78,7 @@ button_pressed_long_callback(Button_t *p)
 
 	/* Reset ALL Nodes */
 	uco_nmt_master_send_command(&uCO, UCANOPEN_NMT_CS_RESET_COMMUNICATION, UCANOPEN_NMT_BROADCAST_MESSAGE);
+	slaveNodeId = 100;
 
 #endif /* UCANOPEN_LSS_MASTER_ENABLED */
 }
