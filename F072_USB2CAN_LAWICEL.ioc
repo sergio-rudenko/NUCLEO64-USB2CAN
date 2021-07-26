@@ -186,4 +186,3 @@ PA3.GPIO_Label=USART_RX
 PA3.Signal=USART2_RX
 PA2.GPIO_Mode=GPIO_MODE_AF_PP
 PA2.Locked=true
-isbadioc=false

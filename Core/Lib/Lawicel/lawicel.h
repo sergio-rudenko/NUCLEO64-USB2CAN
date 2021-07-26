@@ -40,10 +40,6 @@
 #define LAWICEL_TIMER_MAX_MS		60000
 
 /* LAWICEL protocol */
-
-#define LAWICEL_RESPONCE_OK			0x0D
-#define LAWICEL_RESPONCE_ERROR		0x07
-
 #define LAWICEL_GET_VERSION			'v'
 #define LAWICEL_GET_HARDWARE		'V'
 
@@ -55,38 +51,47 @@
 #define LAWICEL_CLOSE_CAN			'C'
 #define LAWICEL_OPEN_CAN			'O'
 
+#define LAWICEL_START_LSS_FASTSCAN	'F'
+
 /* types */
+
+typedef enum LAWICEL_Response_
+{
+  LAWICEL_RESPONSE_ERROR	= 0x07,
+  LAWICEL_RESPONSE_OK		= 0x0D,
+}LAWICEL_Response_t;
 
 typedef enum LAWICEL_TimestampState
 {
-	LAWICEL_TIMESTAMP_DISABLED = 0,
-	LAWICEL_TIMESTAMP_ENABLED = 1,
+  LAWICEL_TIMESTAMP_DISABLED = 0,
+  LAWICEL_TIMESTAMP_ENABLED = 1,
 } LAWICEL_TimestampState_t;
 
 typedef struct LAWICEL_Instance
 {
-	UART_HandleTypeDef *huart;
-	CAN_HandleTypeDef *hcan;
+  UART_HandleTypeDef *huart;
+  CAN_HandleTypeDef *hcan;
 
-	rBuffer_t LawicelRx;
-	rBuffer_t LawicelTx;
-	rBuffer_t CanTx;
+  rBuffer_t LawicelRx;
+  rBuffer_t LawicelTx;
+  rBuffer_t CanTx;
 
-	LAWICEL_TimestampState_t TimestampState;
-	uint32_t savedTicks;
-	uint16_t timer;
+  LAWICEL_TimestampState_t TimestampState;
+  uint32_t savedTicks;
+  uint16_t timer;
+
 } LAWICEL_Instance_t;
 
 typedef struct CAN_Message
 {
-	struct
-	{
-		uint32_t ID;
-		uint8_t IDE;
-		uint8_t RTR;
-		uint8_t DLC;
-	} header;
-	uint8_t data[8];
+  struct
+  {
+    uint32_t ID;
+    uint8_t IDE;
+    uint8_t RTR;
+    uint8_t DLC;
+  } header;
+  uint8_t data[8];
 } CAN_Message_t;
 
 /* exports */
@@ -95,8 +100,10 @@ extern LAWICEL_Instance_t *pLawicelInstance;
 
 /* API functions */
 
-ErrorStatus
-LAWICEL_init(LAWICEL_Instance_t*, UART_HandleTypeDef *huart, CAN_HandleTypeDef *hcan);
+uint8_t		halfbyte_to_hexascii(uint8_t num);
+uint8_t		hexascii_to_halfbyte(uint8_t chr);
+
+ErrorStatus	LAWICEL_init(LAWICEL_Instance_t*, UART_HandleTypeDef *huart, CAN_HandleTypeDef *hcan);
 
 ErrorStatus
 LAWICEL_run(LAWICEL_Instance_t*);
@@ -112,6 +119,13 @@ LAWICEL_CAN_on_receive(LAWICEL_Instance_t*, CAN_RxHeaderTypeDef *pHeader, uint8_
 
 ErrorStatus
 LAWICEL_CAN_transmit(LAWICEL_Instance_t*);
+
+
+/* additional functional commands */
+
+LAWICEL_Response_t	lawicel_start_lss_fastscan(LAWICEL_Instance_t*);
+void lawicel_on_lss_fastscan_complete(LAWICEL_Instance_t*, const uint32_t slaveADDR[]);
+void lawicel_on_lss_fastscan_error(LAWICEL_Instance_t*, uint8_t error);
 
 /* callback funcrions */
 
