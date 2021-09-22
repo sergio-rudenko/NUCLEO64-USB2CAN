@@ -29,7 +29,7 @@
 /* version */
 
 #define CONVERTER_VERSION_HW		"v002_EMU"
-#define CONVERTER_VERSION_SW		"v007"
+#define CONVERTER_VERSION_SW		"v011"
 
 /* constants */
 
@@ -51,7 +51,10 @@
 #define LAWICEL_CLOSE_CAN			'C'
 #define LAWICEL_OPEN_CAN			'O'
 
-#define LAWICEL_START_LSS_FASTSCAN	'F'
+#define LAWICEL_CANOPEN_LSS			'L'
+#define LAWICEL_LSS_FASTSCAN		'f'
+#define LAWICEL_FASTSCAN_ERROR		'e'
+#define LAWICEL_FASTSCAN_COMPLETE	'c'
 
 /* types */
 
@@ -79,6 +82,10 @@ typedef struct LAWICEL_Instance
   LAWICEL_TimestampState_t TimestampState;
   uint32_t savedTicks;
   uint16_t timer;
+
+  struct {
+    bool lssFastScan;
+  } Flag;
 
 } LAWICEL_Instance_t;
 

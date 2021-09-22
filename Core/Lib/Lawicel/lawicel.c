@@ -9,19 +9,21 @@
 #include <string.h>
 
 #include "lawicel.h"
+#include "ucanopen.h" //FIXME: move to impl
 
 /* const */
-static const uint32_t bitrate_table[] = {
-                                          10000UL,
-                                          20000UL,
-                                          50000UL,
-                                          100000UL,
-                                          125000UL,
-                                          250000UL,
-                                          500000UL,
-                                          800000UL,
-                                          1000000UL
-                                        };
+static const uint32_t bitrate_table[] =
+  {
+    10000UL,
+    20000UL,
+    50000UL,
+    100000UL,
+    125000UL,
+    250000UL,
+    500000UL,
+    800000UL,
+    1000000UL
+  };
 
 /* buffers */
 static uint8_t lawicel_rx[LAWICEL_RX_BUFFER_SIZE];
@@ -309,19 +311,17 @@ LAWICEL_run(LAWICEL_Instance_t *p)
             case LAWICEL_TIMESTAMP_DISABLED:
               p->TimestampState = LAWICEL_TIMESTAMP_DISABLED;
               reply_data[0] = LAWICEL_RESPONSE_OK;
-              reply_size = 1;
               break;
 
             case LAWICEL_TIMESTAMP_ENABLED:
               p->TimestampState = LAWICEL_TIMESTAMP_ENABLED;
               reply_data[0] = LAWICEL_RESPONSE_OK;
-              reply_size = 1;
               break;
 
             default:
               reply_data[0] = LAWICEL_RESPONSE_ERROR;
-              reply_size = 1;
           }
+          reply_size = 1;
           break;
 
         case LAWICEL_TRANSMIT_STD:
@@ -350,23 +350,29 @@ LAWICEL_run(LAWICEL_Instance_t *p)
 
               LAWICEL_CAN_transmit(p);
               reply_data[0] = LAWICEL_RESPONSE_OK;
-              reply_size = 1;
             }
             else
             {
               reply_data[0] = LAWICEL_RESPONSE_ERROR;
-              reply_size = 1;
             }
           }
           else
           {
             reply_data[0] = LAWICEL_RESPONSE_ERROR;
-            reply_size = 1;
           }
+          reply_size = 1;
           break;
 
-        case LAWICEL_START_LSS_FASTSCAN:
-          reply_data[0] = lawicel_start_lss_fastscan(p);
+        case LAWICEL_CANOPEN_LSS:
+          ring_buffer_move_read_index(&p->LawicelRx, 1); // skip byte
+          if (ring_buffer_read(&p->LawicelRx) == LAWICEL_LSS_FASTSCAN)
+          {
+            reply_data[0] = lawicel_start_lss_fastscan(p);
+          }
+          else
+          {
+            reply_data[0] = LAWICEL_RESPONSE_ERROR;
+          }
           reply_size = 1;
           break;
 
@@ -492,6 +498,15 @@ ErrorStatus
 LAWICEL_CAN_on_receive(LAWICEL_Instance_t *p, CAN_RxHeaderTypeDef *pHeader, uint8_t *pData)
 {
   //TODO! 29bit messages
+
+  //FIXME: move to implementation!
+  if (p->Flag.lssFastScan &&
+      pHeader->StdId == UCANOPEN_COB_ID_LSS_RESPONCE)
+  {
+    /* Skip transmitting received packet to uplink */
+    LAWICEL_CAN_on_receive_callback(p, pHeader, pData);
+    return SUCCESS;
+  }
 
   size_t num_bytes = 1 /* 't' */+ 3 /* ID */+ 1 /* DLC */;
   num_bytes += (pHeader->DLC * 2) /* Data */+ 1 /* '\r' */;
